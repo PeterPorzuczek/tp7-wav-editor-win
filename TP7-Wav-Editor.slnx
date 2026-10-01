@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TP7.Core/TP7.Core.csproj"/>
+  </Folder>
+</Solution>

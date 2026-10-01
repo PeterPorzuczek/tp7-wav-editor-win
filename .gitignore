@@ -1,0 +1,42 @@
+# Build and generated output
+**/[Bb]in/
+**/[Oo]bj/
+/artifacts/
+/dist/
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+*.nupkg
+*.snupkg
+
+# Local tools, references and recordings (never part of the source distribution)
+/.tools/
+/analysis/
+*.app/
+*.wav
+*.wave
+*.tmp
+*.log
+
+# IDE and machine-specific state
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local secrets and publishing credentials
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.publishsettings
+*.pubxml.user
