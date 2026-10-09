@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>Streaming PCM preview and Windows audio playback for TP-7 WAV Editor.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../TP7.Core/TP7.Core.csproj"/>
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1"/>
+  </ItemGroup>
+</Project>

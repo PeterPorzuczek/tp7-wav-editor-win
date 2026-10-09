@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/TP7.Core/TP7.Core.csproj"/>
+    <Project Path="src/TP7.Audio/TP7.Audio.csproj"/>
   </Folder>
 </Solution>
