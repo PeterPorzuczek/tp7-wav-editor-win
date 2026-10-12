@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <AssemblyName>TP7-Wav-Editor</AssemblyName>
+    <RootNamespace>TP7.Windows</RootNamespace>
+    <Description>A native Windows editor for TP-7 WAV tempo and cue metadata.</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../TP7.Core/TP7.Core.csproj"/>
+    <ProjectReference Include="../TP7.Audio/TP7.Audio.csproj"/>
+    <EmbeddedResource Include="Resources/KeyboardShortcuts.txt"/>
+  </ItemGroup>
+</Project>
