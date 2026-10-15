@@ -1,1 +1,191 @@
-<Window x:Class="TP7.Windows.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="TP-7 WAV Editor" Width="1280" Height="820"><Grid/></Window>
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:TP7.Windows" x:Class="TP7.Windows.MainWindow" Title="TP-7 WAV Editor · Windows" Width="1280" Height="820" MinWidth="1040" MinHeight="670" WindowStartupLocation="CenterScreen" Background="#151D1B" Foreground="#EBEEE9" FontFamily="Segoe UI" FontSize="12" UseLayoutRounding="True" AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver" PreviewKeyDown="OnKeyDown" PreviewKeyUp="OnKeyUp" Closing="OnClosing">
+  <Grid Margin="26,22,26,16" x:Name="Root">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="24"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <DockPanel Grid.Row="0">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button Content="Shortcuts  ?" Tag="help" Click="OnAction" Margin="0,0,10,0"/>
+        <Button x:Name="OpenButton" Content="Open WAV" Tag="open" Click="OnAction" ToolTip="Ctrl+O or I · you can also drop a file here" Margin="0,0,10,0"/>
+        <Button x:Name="ExportButton" Content="Export WAV  ↗" Tag="export" Click="OnAction" Background="#FF895B" Foreground="#17211C" BorderBrush="#FF895B" FontWeight="SemiBold" IsEnabled="False" ToolTip="Ctrl+S or E"/>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal">
+        <Border Width="46" Height="46" CornerRadius="23" BorderBrush="#FF895B" BorderThickness="2" Margin="0,0,14,0">
+          <TextBlock Text="7" FontFamily="Consolas" FontSize="27" Foreground="#FF895B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <StackPanel>
+          <TextBlock Text="TP-7 / WAV EDITOR" FontSize="24" FontWeight="SemiBold"/>
+          <TextBlock Text="TEMPO  /  CUE POINTS  /  WINDOWS" FontFamily="Consolas" FontSize="10" Foreground="#9AADA8" Margin="0,5,0,0"/>
+        </StackPanel>
+      </StackPanel>
+    </DockPanel>
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="18"/>
+        <ColumnDefinition Width="280"/>
+      </Grid.ColumnDefinitions>
+      <Border Grid.Column="0" Background="#1C2723" BorderBrush="#34423C" BorderThickness="1" CornerRadius="8" Padding="18">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="76"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <StackPanel>
+            <TextBlock x:Name="FileNameText" Text="Your recording. Your rhythm." FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+            <TextBlock x:Name="FileInfoText" Text="Open a WAV file or drop it into this window." Foreground="#9AADA8" Margin="0,6,0,0"/>
+          </StackPanel>
+          <Grid Grid.Row="1" Margin="0,20,0,14" x:Name="Transport" IsEnabled="False">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+              <Button x:Name="PlayButton" Content="▶  Play" Tag="play" Click="OnAction" ToolTip="Hold Space to audition · click Play for continuous playback"/>
+              <Button Content="■" Tag="stop" Click="OnAction" Margin="6,0,0,0" ToolTip="Stop"/>
+              <TextBlock x:Name="PositionText" Text="00:00.000" FontFamily="Consolas" FontSize="17" Margin="14,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+              <Button Content="−" Tag="zoomout" Click="OnAction" ToolTip="Zoom out"/>
+              <Button Content="+" Tag="zoomin" Click="OnAction" Margin="5,0" ToolTip="Zoom in"/>
+              <Button Content="Fit" Tag="fit" Click="OnAction"/>
+            </StackPanel>
+          </Grid>
+          <Border Grid.Row="2" Background="#101A16" CornerRadius="5" ClipToBounds="True">
+            <local:WaveformView x:Name="Waveform" Focusable="True"/>
+          </Border>
+          <Border Grid.Row="3" Background="#121D18" CornerRadius="4" Margin="0,14,0,0" ClipToBounds="True">
+            <local:WaveformView x:Name="Overview" IsOverview="True"/>
+          </Border>
+          <Grid Grid.Row="4" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+              <TextBlock Text="Click: add cue  ·  Drag: move  ·  Right-click: delete" FontSize="11" Foreground="#9AADA8"/>
+              <TextBlock Text="Scroll: zoom  ·  Shift + scroll: pan" FontSize="11" Foreground="#9AADA8" Margin="0,4,0,0"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="VOL" Foreground="#9AADA8" FontSize="10" VerticalAlignment="Center"/>
+              <Slider x:Name="VolumeSlider" Width="80" Minimum="0" Maximum="1" Value="0.8" Margin="8,0,0,0" ValueChanged="OnVolumeChanged" ToolTip="Playback volume; does not affect the exported audio"/>
+            </StackPanel>
+          </Grid>
+        </Grid>
+      </Border>
+      <Grid Grid.Column="2" x:Name="EditorPanel" IsEnabled="False">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="14"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Background="#1C2723" BorderBrush="#34423C" BorderThickness="1" CornerRadius="8" Padding="17">
+          <StackPanel>
+            <TextBlock Text="01 / TEMPO &amp; GRID" Style="{StaticResource Caption}"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="TempoBox" Text="120" FontFamily="Consolas" FontSize="30" Width="122" LostKeyboardFocus="OnTempoCommit" KeyDown="OnTempoKeyDown" ToolTip="0–999 BPM. Enter 0 to remove tempo."/>
+                <TextBlock Text="BPM" Foreground="#9AADA8" VerticalAlignment="Bottom" Margin="9,0,0,10"/>
+              </StackPanel>
+              <Button Grid.Column="1" Content="TAP" Tag="tap" Click="OnAction" Margin="8,0,0,0" ToolTip="T · tap the beat"/>
+            </Grid>
+            <Button Content="Calculate from cues  ·  C" Tag="calculate" Click="OnAction" Margin="0,12,0,9" ToolTip="Select the first cue. The interval to the next cue equals 4 beats."/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <CheckBox x:Name="GridToggle" Content="Grid  G" Click="OnGridToggle"/>
+              <CheckBox x:Name="SnapToggle" Grid.Column="1" Content="Snap  S" Click="OnSnapToggle"/>
+            </Grid>
+            <Button Content="Align to selected cue  ·  Tab" Tag="align" Click="OnAction" Padding="8,7" Margin="0,5,0,0"/>
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="2" Background="#1C2723" BorderBrush="#34423C" BorderThickness="1" CornerRadius="8" Padding="17">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <DockPanel>
+              <TextBlock x:Name="CueCountText" Text="0" DockPanel.Dock="Right" Foreground="#FF895B" FontFamily="Consolas"/>
+              <TextBlock Text="02 / CUE POINTS" Style="{StaticResource Caption}"/>
+            </DockPanel>
+            <ListBox x:Name="CueList" Grid.Row="1" Background="Transparent" BorderThickness="0" SelectionChanged="OnCueSelected" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="-5,2,-5,10">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="42"/>
+                      <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Number}" Foreground="#FF895B" FontFamily="Consolas"/>
+                    <TextBlock Text="{Binding Time}" Grid.Column="1" FontFamily="Consolas" HorizontalAlignment="Right"/>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock Grid.Row="2" Text="SELECTED CUE POSITION / SECONDS" Style="{StaticResource Caption}" FontSize="9"/>
+            <Grid Grid.Row="3">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="CueTimeBox" IsEnabled="False" FontFamily="Consolas" Text="—" KeyDown="OnCueTimeKeyDown" LostKeyboardFocus="OnCueTimeCommit" ToolTip="Exact position in seconds. Press Enter to apply."/>
+              <Button Grid.Column="1" Content="Delete" Tag="delete" Click="OnAction" Margin="8,0,0,0"/>
+            </Grid>
+            <Grid Grid.Row="4" Margin="0,10,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Button Content="+ Add cue" Tag="add" Click="OnAction" Padding="7,8"/>
+              <Button Grid.Column="1" Content="Clear cues" Tag="clear" Click="OnAction" Padding="7,8" Margin="7,0,0,0" ToolTip="Clear every cue. Press Ctrl+Z to undo."/>
+            </Grid>
+          </Grid>
+        </Border>
+        <StackPanel Grid.Row="3" Margin="0,14,0,0">
+          <Button x:Name="NormalizeButton" Content="Normalize audio  ·  N" Tag="normalize" Click="OnAction"/>
+          <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="UndoButton" Content="↶  Undo" Tag="undo" Click="OnAction" ToolTip="Ctrl+Z"/>
+            <Button x:Name="RedoButton" Grid.Column="1" Content="Redo  ↷" Tag="redo" Click="OnAction" Margin="7,0,0,0" ToolTip="Ctrl+Y"/>
+          </Grid>
+        </StackPanel>
+      </Grid>
+    </Grid>
+    <Grid Grid.Row="3" Margin="0,16,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock x:Name="StatusText" Text="Ready. Metadata edits preserve the original audio samples." Foreground="#9AADA8" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Grid.Column="1" Text="WINDOWS EDITION  /  1.0" Foreground="#6D8578" FontFamily="Consolas" FontSize="10" Margin="16,0,0,0"/>
+    </Grid>
+    <Border x:Name="BusyOverlay" Grid.RowSpan="4" Background="#ED151D1B" CornerRadius="8" Visibility="Collapsed">
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">
+        <TextBlock x:Name="BusyText" Text="Loading…" FontSize="19" HorizontalAlignment="Center"/>
+        <ProgressBar x:Name="Progress" Minimum="0" Maximum="1" Height="4" Margin="0,22,0,18" Foreground="#FF895B"/>
+        <Button Content="Cancel" Tag="cancel" Click="OnAction" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>
