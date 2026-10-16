@@ -1,3 +1,39 @@
-TP-7 WAV Editor
+EDIT WAV METADATA FOR TP-7
 
-Edit WAV tempo and cue metadata on Windows.
+Ctrl+O / I     Open a WAV file (or drag and drop)
+Ctrl+S / E     Export the edited WAV
+Space         Hold to audition from cue / cursor
+Play button   Toggle continuous playback
+Click waveform Add a cue; click a marker to select
+Drag marker   Move a cue
+Right-click   Delete the marker under the pointer
+Delete        Delete the selected cue
+Left / Right  Select previous / next cue
+Down          Select the cue nearest the view center
+Esc / Up      Deselect the cue
+[ / ]         Nudge cue; Shift: one sample
+Scroll / + / - Zoom in / out
+Shift+scroll  Pan the timeline
+Overview      Click or drag to navigate
+Home          Fit the whole recording
+T             Tap tempo (up to 8 taps)
+C             Calculate BPM from adjacent cues
+G / S         Toggle grid / snapping
+Tab           Align the grid to the selected cue
+N             Normalize audio
+Ctrl+Z / Y    Undo / redo
+
+TEMPO AND EXPORT
+
+The interval between the selected cue and the next
+cue represents four beats when calculating BPM.
+Tempo 0 removes the ACID chunk. Exporting without
+cues writes an empty cue chunk for TP-7 compatibility.
+Metadata-only edits preserve the original audio bytes.
+Normalization changes the exported samples; playback
+volume does not. Undo can revert normalization.
+
+Independent Windows implementation, inspired by
+TP-7 WAV Editor 2.2 by EcstasyJones / Max Solomon.
+Licensed under MIT. Hardware verification on a
+physical TP-7 is still required.
