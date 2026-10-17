@@ -4,4 +4,7 @@
     <Project Path="src/TP7.Audio/TP7.Audio.csproj"/>
     <Project Path="src/TP7.Windows/TP7.Windows.csproj"/>
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TP7.Tests/TP7.Tests.csproj"/>
+  </Folder>
 </Solution>
