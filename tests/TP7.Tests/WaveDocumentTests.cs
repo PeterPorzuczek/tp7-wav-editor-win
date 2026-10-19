@@ -68,4 +68,35 @@ public sealed class WaveDocumentTests : IDisposable
         Assert.Equal((byte)0x5A, junk.Padding);
     }
 
+    [Theory]
+    [InlineData(8, 1)]
+    [InlineData(8, 2)]
+    [InlineData(16, 1)]
+    [InlineData(16, 2)]
+    [InlineData(24, 1)]
+    [InlineData(24, 2)]
+    [InlineData(32, 1)]
+    [InlineData(32, 2)]
+    public void NormalizationPreservesFormatAndPreviewSamples(int depth, int ch)
+    {
+        string input = Input($"normalize-{depth}-{ch}", depth, ch);
+        using var doc = WaveDocument.Load(input);
+        string output = Output($"normalize-{depth}-{ch}");
+        doc.Export(output, new(120, [.. doc.InitialCues], true));
+        using var normalized = WaveDocument.Load(output);
+        Near(1d - Math.Pow(2, 1 - depth), normalized.Peak, 1d / Math.Pow(2, depth - 1));
+        Assert.Equal(doc.FrameCount, normalized.FrameCount);
+        Assert.Equal(doc.Format, normalized.Format);
+        var data = Inspect(File.ReadAllBytes(output))["data"];
+        // Frame 0 is zero, frame 1 is +0.25, frame 2 is -0.5 in independently written fixture.
+        Near(.5, normalized.Format.Decode(data.AsSpan(ch * depth / 8)), depth == 8 ? .01 : .0001);
+        Assert.True(normalized.Format.Decode(data.AsSpan(2 * ch * depth / 8)) < -.98, "Negative peak clipped or wrapped");
+        var preview = new PcmPreviewProvider(doc, 1, false) { Volume = 1 };
+        byte[] buffer = new byte[4 * ch];
+        Assert.Equal(buffer.Length, preview.Read(buffer, 0, buffer.Length));
+        Near(.25, BinaryPrimitives.ReadInt16LittleEndian(buffer) / 32768d, depth == 8 ? .01 : .0001);
+        var end = new PcmPreviewProvider(doc, doc.FrameCount, false);
+        Assert.Equal(0, end.Read(buffer, 0, buffer.Length));
+    }
+
 }
