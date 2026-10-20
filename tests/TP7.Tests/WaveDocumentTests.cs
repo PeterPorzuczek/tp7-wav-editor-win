@@ -99,4 +99,29 @@ public sealed class WaveDocumentTests : IDisposable
         Assert.Equal(0, end.Read(buffer, 0, buffer.Length));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FloatExportPreservesAudioAndSupportsNormalization(bool extensible)
+    {
+        string input = Input("float-" + extensible, 32, 2, true, extensible);
+        using var doc = WaveDocument.Load(input);
+        Assert.True(doc.Format.IsFloat, "Not float");
+        string output = Output("float-" + extensible);
+        doc.Export(output, new(120, [], false));
+        Assert.Equal(Inspect(File.ReadAllBytes(input))["data"], Inspect(File.ReadAllBytes(output))["data"]);
+        doc.Export(output, new(120, [], true));
+        using var normalized = WaveDocument.Load(output);
+        Near(1, normalized.Peak);
+    }
+
+    [Fact]
+    public void ExtensiblePcmPreservesFormatChunk()
+    {
+        string input = Input("extensible-pcm", 24, 2, false, true);
+        using var doc = WaveDocument.Load(input);
+        doc.Export(Output("extensible-pcm"), new(120, [], false));
+        Assert.Equal(Inspect(File.ReadAllBytes(input))["fmt "], Inspect(File.ReadAllBytes(Output("extensible-pcm")))["fmt "]);
+    }
+
 }
