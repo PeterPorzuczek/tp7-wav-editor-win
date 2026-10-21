@@ -124,4 +124,28 @@ public sealed class WaveDocumentTests : IDisposable
         Assert.Equal(Inspect(File.ReadAllBytes(input))["fmt "], Inspect(File.ReadAllBytes(Output("extensible-pcm")))["fmt "]);
     }
 
+    [Fact]
+    public void ZeroTempoAndEmptyCuesRemoveDeviceMetadata()
+    {
+        using var doc = WaveDocument.Load(Input("empty-cues"));
+        doc.Export(Output("empty-cues"), new(0, [], false));
+        var chunks = Inspect(File.ReadAllBytes(Output("empty-cues")));
+        Assert.False(chunks.ContainsKey("acid"));
+        Assert.Equal([0, 0, 0, 0], chunks["cue "]);
+        Assert.Equal("adtl"u8.ToArray(), chunks["LIST"]);
+        using var result = WaveDocument.Load(Output("empty-cues"));
+        Assert.Empty(result.InitialCues);
+    }
+
+    [Fact]
+    public void CueLabelIdentifiersFollowSurvivingCues()
+    {
+        using var doc = WaveDocument.Load(Input("labels"));
+        doc.Export(Output("labels"), new(120, [new(7, 100)], false));
+        byte[] list = Inspect(File.ReadAllBytes(Output("labels")))["LIST"];
+        Assert.Equal(1u, BinaryPrimitives.ReadUInt32LittleEndian(list.AsSpan(12)));
+        Assert.Contains("second", Encoding.ASCII.GetString(list));
+        Assert.DoesNotContain("first", Encoding.ASCII.GetString(list));
+    }
+
 }
