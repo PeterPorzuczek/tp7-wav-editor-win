@@ -148,4 +148,33 @@ public sealed class WaveDocumentTests : IDisposable
         Assert.DoesNotContain("first", Encoding.ASCII.GetString(list));
     }
 
+    [Fact]
+    public void ReplacingSourcePreservesOriginalHandleForLaterExports()
+    {
+        string input = Input("in-place");
+        byte[] audio = Inspect(File.ReadAllBytes(input))["data"];
+        using var doc = WaveDocument.Load(input);
+        doc.Export(input, new(88, [], true));
+        using (var result = WaveDocument.Load(input))
+        {
+            Near(88, result.InitialTempo);
+        }
+
+        doc.Export(Output("in-place"), new(99, [], false));
+        Assert.Equal(audio, Inspect(File.ReadAllBytes(Output("in-place")))["data"]);
+    }
+
+    [Fact]
+    public void CanceledExportLeavesDestinationUnchanged()
+    {
+        using var doc = WaveDocument.Load(Input("cancel"));
+        string target = Output("cancel");
+        File.WriteAllText(target, "original");
+        using var cancel = new CancellationTokenSource();
+        cancel.Cancel();
+        Assert.Throws<OperationCanceledException>(() => doc.Export(target, new(120, [], false), token: cancel.Token));
+        Assert.Equal("original", File.ReadAllText(target));
+        Assert.Empty(Directory.GetFiles(root, ".tp7-*.tmp"));
+    }
+
 }
