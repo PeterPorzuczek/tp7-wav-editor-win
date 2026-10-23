@@ -177,4 +177,44 @@ public sealed class WaveDocumentTests : IDisposable
         Assert.Empty(Directory.GetFiles(root, ".tp7-*.tmp"));
     }
 
+    [Fact]
+    public void MalformedRiffFormatAndCueChunksAreRejected()
+    {
+        byte[] good = Fixture(16, 2, false, false, true, 48001);
+        foreach (byte[] bad in new[] { new byte[10], good[..^10], Mutate(good, b => b[0] = 0), Mutate(good, b => BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(16), uint.MaxValue)) })
+        {
+            string path = Path.Combine(root, "bad.wav");
+            File.WriteAllBytes(path, bad);
+            Assert.Throws<InvalidDataException>(() => WaveDocument.Load(path).Dispose());
+        }
+        foreach (string id in new[] { "fmt ", "cue " })
+        {
+            byte[] bad = (byte[])good.Clone();
+            int at = Find(bad, id);
+            if (id == "fmt ")
+            {
+                bad[at + 12] = 1;
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(bad.AsSpan(at + 8), uint.MaxValue);
+            }
+
+            string path = Path.Combine(root, "bad-" + id.Trim() + ".wav");
+            File.WriteAllBytes(path, bad);
+            Assert.Throws<InvalidDataException>(() => WaveDocument.Load(path).Dispose());
+        }
+    }
+
+    [Fact]
+    public void NonFiniteFloatSamplesAreRejected()
+    {
+        byte[] data = Fixture(32, 1, true, false, false, 32);
+        int pos = Find(data, "data") + 8;
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(pos), float.NaN);
+        string path = Path.Combine(root, "nan.wav");
+        File.WriteAllBytes(path, data);
+        Assert.Throws<InvalidDataException>(() => WaveDocument.Load(path).Dispose());
+    }
+
 }
