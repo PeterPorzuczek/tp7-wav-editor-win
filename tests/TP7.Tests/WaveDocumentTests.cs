@@ -217,4 +217,61 @@ public sealed class WaveDocumentTests : IDisposable
         Assert.Throws<InvalidDataException>(() => WaveDocument.Load(path).Dispose());
     }
 
+    [Fact]
+    public void UndoRedoRestoresAudioMetadataAndDirtyState()
+    {
+        using var doc = WaveDocument.Load(Input("session"));
+        var session = new EditorSession(doc);
+        Assert.False(session.IsDirty);
+        session.AddCue(.123456);
+        Assert.Equal(5926L, session.SelectedCue!.Frame);
+        session.MoveSelected(12345d / 48000);
+        Assert.Equal(12345L, session.SelectedCue!.Frame);
+        session.Undo();
+        Assert.Equal(5926L, session.SelectedCue!.Frame);
+        session.Redo();
+        Assert.Equal(12345L, session.SelectedCue!.Frame);
+        session.MarkSaved();
+        Assert.False(session.IsDirty);
+        session.Normalize();
+        Assert.True(session.Normalized && session.IsDirty, "Normalize not dirty");
+        session.Undo();
+        Assert.True(!session.Normalized && !session.IsDirty, "Undo normalization failed");
+        session.ShowGrid = session.SnapToGrid = true;
+        session.SetTempo(0);
+        Assert.True(!session.ShowGrid && !session.SnapToGrid, "Zero tempo leaves grid enabled");
+        Assert.Throws<ArgumentOutOfRangeException>(() => session.SetTempo(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => session.SetTempo(1000));
+        session.DeleteAll();
+        Assert.Empty(session.Cues);
+        session.Undo();
+        Assert.Equal(3, session.Cues.Count);
+        session.AddCue(doc.Duration);
+        Assert.Equal(doc.FrameCount, session.SelectedCue!.Frame);
+        session.MoveSelected(doc.Duration);
+        Assert.Equal(doc.FrameCount, session.SelectedCue.Frame);
+    }
+
+    [Fact]
+    public void GridAndFourBeatTempoUseCueIntervals()
+    {
+        using var doc = WaveDocument.Load(Input("tempo", frames: 48000 * 4));
+        var session = new EditorSession(doc);
+        session.DeleteAll();
+        session.AddCue(.25);
+        uint id = session.SelectedId!.Value;
+        session.AddCue(2.25);
+        session.SelectedId = id;
+        Assert.True(session.CalculateTempoFromCues(), "BPM calculation failed");
+        Near(120, session.Tempo);
+        Near(.25, session.GridOffset);
+        session.ShowGrid = session.SnapToGrid = true;
+        Near(.75, session.Snap(.62, .5));
+        session.MoveSelected(3);
+        session.SelectedId = id;
+        Assert.False(session.CalculateTempoFromCues());
+        Near(.125, session.GridStep(1, 800));
+        Assert.True(session.GridStep(100000, 800) > 100, "Grid not bounded for long recordings");
+    }
+
 }
