@@ -274,4 +274,56 @@ public sealed class WaveDocumentTests : IDisposable
         Assert.True(session.GridStep(100000, 800) > 100, "Grid not bounded for long recordings");
     }
 
+    [Fact]
+    public void SilentAudioDoesNotNormalize()
+    {
+        byte[] data = Fixture(8, 1, false, false, false, 1);
+        data[Find(data, "data") + 8] = 128;
+        string path = Path.Combine(root, "silence.wav");
+        File.WriteAllBytes(path, data);
+        using var doc = WaveDocument.Load(path);
+        Assert.Equal(0d, doc.Peak);
+        var session = new EditorSession(doc);
+        session.Normalize();
+        Assert.False(session.Normalized);
+        doc.Export(Output("silence"), new(120, [], true));
+        using var output = WaveDocument.Load(Output("silence"));
+        Assert.Equal(0d, output.Peak);
+    }
+
+    [Fact]
+    public void PeakCacheRetainsNarrowTransients()
+    {
+        byte[] data = Fixture(16, 1, false, false, false, 4096);
+        int pos = Find(data, "data") + 8;
+        Array.Clear(data, pos, 4096 * 2);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(pos + 1234 * 2), 30000);
+        string path = Path.Combine(root, "transient.wav");
+        File.WriteAllBytes(path, data);
+        using var doc = WaveDocument.Load(path);
+        Near(30000 / 32768d, doc.Peaks.Query(0, 4096, 0).Max);
+        Near(30000 / 32768d, doc.Peaks.Query(1234, 1235, 0).Max);
+        Near(0, doc.Peaks.Query(1000, 1100, 0).Max);
+    }
+
+    [Fact]
+    public void MultichannelExportPreservesEveryChannel()
+    {
+        string input = Input("multichannel", 24, 6);
+        using var doc = WaveDocument.Load(input);
+        Assert.Equal(6, doc.Format.Channels);
+        var provider = new PcmPreviewProvider(doc, 0, false);
+        Assert.Equal(2, provider.WaveFormat.Channels);
+        doc.Export(Output("multichannel"), new(120, [], false));
+        Assert.Equal(Inspect(File.ReadAllBytes(input))["data"], Inspect(File.ReadAllBytes(Output("multichannel")))["data"]);
+    }
+
+    [Fact]
+    public void MissingTempoUsesDefaultAndFileNameIsUpdated()
+    {
+        using var doc = WaveDocument.Load(Input("song_tempo_120_cues_2", metadata: false));
+        Near(120, doc.InitialTempo);
+        Assert.Empty(doc.InitialCues);
+        Assert.Equal("song_no_tempo_cues_0.wav", doc.SuggestedFileName(new(0, [], false)));
+    }
 }
