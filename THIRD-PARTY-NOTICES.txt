@@ -1,0 +1,41 @@
+TP-7 WAV Editor for Windows
+
+The Windows implementation is licensed under MIT; see LICENSE.
+
+Original application reference
+------------------------------
+TP-7 Wav Editor 2.2 by EcstasyJones / Max Solomon
+https://www.ecstasyjones.com/tp-7-wav-editor
+
+The original application was used as a behavioral and file-format reference.
+No original Unity binaries, assets, or macOS plugins are distributed here.
+The original application's ownership and licensing are unchanged.
+
+Runtime dependencies
+--------------------
+NAudio.Core and NAudio.WinMM 2.2.1 — MIT
+Copyright 2020 Mark Heath
+https://github.com/naudio/NAudio
+Full license: licenses/NAudio-LICENSE.txt
+
+Microsoft .NET and Windows Desktop runtime — MIT and third-party notices
+Copyright (c) .NET Foundation and Contributors
+https://github.com/dotnet/runtime
+https://github.com/dotnet/wpf
+
+Self-contained builds include Microsoft .NET. See:
+  licenses/DOTNET-LICENSE.txt
+  licenses/DOTNET-THIRD-PARTY-NOTICES.txt
+  licenses/WINDOWSDESKTOP-LICENSE.txt
+
+Development-only dependencies
+-----------------------------
+xUnit.net and Visual Studio runner — Apache-2.0
+https://github.com/xunit/xunit
+https://github.com/xunit/visualstudio.xunit
+
+Microsoft.NET.Test.Sdk — MIT
+https://github.com/microsoft/vstest
+
+Test dependencies are restored from NuGet and are not included in the
+portable application. Their package archives contain their license texts.
