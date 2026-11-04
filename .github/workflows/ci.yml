@@ -1,0 +1,53 @@
+name: Windows build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - name: Restore locked dependencies
+        run: dotnet restore --locked-mode
+      - name: Check formatting
+        run: dotnet format --verify-no-changes --no-restore
+      - name: Build
+        run: dotnet build -c Release --no-restore
+      - name: Test
+        run: ./scripts/test.ps1 -NoBuild -NoRestore
+      - name: Package
+        run: ./scripts/publish.ps1 -SkipTests -NoRestore
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: artifacts/test-results/*.trx
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-x64
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 14

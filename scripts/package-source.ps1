@@ -22,7 +22,7 @@ $rootFiles = @(
     'THIRD-PARTY-NOTICES.txt'
 )
 $sourceFiles = @($rootFiles | ForEach-Object { Get-Item -LiteralPath (Join-Path $repositoryRoot $_) })
-foreach ($directory in @('src', 'tests', 'scripts', 'docs', 'licenses')) {
+foreach ($directory in @('src', 'tests', 'scripts', 'docs', 'licenses', '.github')) {
     $sourceFiles += Get-ChildItem -LiteralPath (Join-Path $repositoryRoot $directory) -Recurse -File -Force |
         Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
 }
