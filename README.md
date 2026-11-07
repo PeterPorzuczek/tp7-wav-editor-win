@@ -80,3 +80,50 @@ The portable build includes .NET. No separate runtime, Unity installation, or ad
 access is required. To create the package yourself, follow [Build and test](#build-and-test).
 The interface and documentation are in English.
 
+## Supported files
+
+| Format | Support |
+| --- | --- |
+| RIFF/WAVE PCM | 8, 16, 24, and 32-bit |
+| IEEE floating point | 32-bit |
+| WAVE_FORMAT_EXTENSIBLE | PCM and float formats above, with matching valid and container bit depths |
+| Multiple channels | Up to 32; waveform and preview use channels 1–2, export retains all channels |
+
+Standard RIFF size limits apply, approximately **4 GB**. RF64, RIFX, compressed audio, and
+segmented WAV data are unsupported. See [WAV compatibility](docs/wav-format.md) for the metadata
+layout, preservation rules, and export behavior.
+
+**Hardware validation is still required.** Automated tests cover file-format and editing
+behavior, but this implementation has not been tested on a physical TP-7. The recorder may
+accept fewer formats than the editor.
+
+## Keyboard shortcuts
+
+<details>
+<summary><b>Show the shortcut reference</b></summary>
+
+| Shortcut | Action |
+| --- | --- |
+| Ctrl+O / I | Open WAV |
+| Ctrl+S / E | Export WAV |
+| Hold Space | Preview from the selected cue, pointer, or start |
+| Click / drag / right-click | Add / move / delete a cue |
+| Insert / Delete | Add / delete a cue |
+| Left / Right | Select previous / next cue |
+| Down | Select the cue nearest the center of the view |
+| Esc / Up | Deselect cue |
+| `[` / `]` | Nudge selected cue; Shift for one sample |
+| Scroll / + / − | Zoom |
+| Shift + scroll | Pan |
+| Home | Fit the entire recording |
+| T / C | Tap tempo / calculate from cues |
+| G / S / Tab | Grid / snap / align grid |
+| N | Normalize audio |
+| Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z | Undo / redo |
+| F1 | Open the shortcut reference in the app |
+
+Letter shortcuts are inactive while typing in a text field. Numeric input accepts both a decimal
+point and a decimal comma.
+
+</details>
+
