@@ -127,3 +127,80 @@ point and a decimal comma.
 
 </details>
 
+## Build and test
+
+Install the **.NET SDK version specified in `global.json`** on Windows, currently 10.0.303.
+NuGet access is needed for the initial restore. The SDK version is pinned, and NuGet dependencies
+have checked-in lock files.
+
+```powershell
+dotnet restore --locked-mode
+dotnet build -c Release --no-restore
+.\scripts\test.ps1 -NoBuild -NoRestore
+.\scripts\publish.ps1 -SkipTests -NoRestore
+```
+
+For a complete release build with restore and tests included, run `scripts/publish.ps1` without
+switches. It creates a self-contained x64 executable, a portable ZIP, and a source ZIP in `dist/`.
+
+| Script | Purpose |
+| --- | --- |
+| `scripts/test.ps1` | Run regression tests and save TRX results to `artifacts/test-results/` |
+| `scripts/publish.ps1` | Restore, test, publish, and package a Windows release |
+| `scripts/package-source.ps1` | Package source files without building or requiring Git |
+
+All scripts resolve paths relative to the repository and can be invoked from any working
+directory. Use `-NoRestore` after a successful restore, `-NoBuild` on the test script after a
+Release build, and `-SkipTests` on the publish script after tests have passed.
+
+Run directly from source with:
+
+```powershell
+dotnet run --project src/TP7.Windows
+```
+
+Check formatting with `dotnet format --verify-no-changes --no-restore`. The GitHub Actions
+workflow restores dependencies, checks formatting, builds, tests, and packages on Windows.
+Generated output and local WAV recordings are excluded from Git.
+
+## Documentation
+
+**For users:** start with [Getting started](#getting-started), follow
+[the editing workflow](#from-recording-to-export), and check
+[supported files](#supported-files) before exporting.
+
+**For contributors:** begin with [CONTRIBUTING.md](CONTRIBUTING.md), then explore:
+
+| Document | What it covers |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Application layers, editing state, audio preview, and validation |
+| [WAV compatibility](docs/wav-format.md) | Samples, tempo metadata, cues, labels, and safe export |
+| [Keyboard reference](src/TP7.Windows/Resources/KeyboardShortcuts.txt) | The help text included in the app |
+| [Third-party notices](THIRD-PARTY-NOTICES.txt) | Dependencies, licenses, and original application credits |
+
+<details>
+<summary><b>Project layout</b></summary>
+
+| Directory | Responsibility |
+| --- | --- |
+| `src/TP7.Core` | RIFF parsing, export, sample conversion, cue editing, history, waveform peaks |
+| `src/TP7.Audio` | PCM preview provider and Windows audio playback |
+| `src/TP7.Windows` | WPF interface, input handling, file dialogs, waveform rendering |
+| `tests/TP7.Tests` | xUnit regression tests with synthetic WAV fixtures |
+| `scripts` | Release packaging and test entry points used locally and in CI |
+| `docs` | Architecture and file-format notes |
+| `licenses` | Third-party license texts distributed with the app |
+
+</details>
+
+## License and credits
+
+[MIT](LICENSE). The Windows implementation is free and open source. Third-party components
+retain their respective licenses; see [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+
+The original macOS application belongs to EcstasyJones / Max Solomon. Its binaries, Unity
+assets, and diagnostic decompilation output are not included in this repository or covered by
+this project's MIT license.
+
+TP-7 and Teenage Engineering are names of their respective owners. This project is independent
+and is not affiliated with or endorsed by Teenage Engineering or the original application author.
