@@ -1,6 +1,28 @@
+<div align="center">
+
 # TP-7 WAV Editor
 
-A native Windows editor for tempo and cue metadata in TP-7 WAV recordings.
+**Tempo and cue points for TP-7 recordings, on Windows.**<br>
+Open a WAV, set its BPM, place your cues, and export with the original audio intact.
+
+![Windows 10 · 11](https://img.shields.io/badge/Windows-10%20%C2%B7%2011-293331)
+![.NET 10 · WPF](https://img.shields.io/badge/.NET%2010-WPF-293331)
+[![MIT License](https://img.shields.io/badge/license-MIT-ff895b)](LICENSE)
+
+**[Getting started](#getting-started)** ·
+**[The workflow](#from-recording-to-export)** ·
+**[Build from source](#build-and-test)** ·
+**[Documentation](#documentation)**
+
+<br>
+
+<a href="https://imgur.com/a/sIn9dRK">
+<img src="https://i.imgur.com/lzh3w4t.jpeg" width="960" alt="TP-7 WAV Editor on Windows: a stereo waveform with four cue points, a 120 BPM grid, playback controls, and precise cue editing.">
+</a>
+<br>
+<sub><b>The Windows editor</b> — a real screenshot using a synthetic stereo recording.</sub>
+
+</div>
 
 ## Why TP-7 WAV Editor
 
