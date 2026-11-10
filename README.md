@@ -34,6 +34,14 @@ This is a native Windows implementation inspired by
 [TP-7 Wav Editor 2.2 by EcstasyJones / Max Solomon](https://www.ecstasyjones.com/tp-7-wav-editor).
 It works with local WAV files. It does not upload recordings or connect directly to the recorder.
 
+<div align="center">
+
+<img src="https://i.imgur.com/eZpkuwY.png" width="460" alt="The Teenage Engineering TP-7 field recorder.">
+<br>
+<sub><b>The TP-7</b> — the Teenage Engineering recorder this project is intended for.</sub>
+
+</div>
+
 ## What it does
 
 <table>
