@@ -2,8 +2,8 @@
 
 # TP-7 WAV Editor
 
-**Tempo and cue points for TP-7 recordings, on Windows.**<br>
-Open a WAV, set its BPM, place your cues, and export with the original audio intact.
+**Tempo, cue points, and multitrack export for TP-7, on Windows.**<br>
+Edit a recording or build a multitrack WAV from stereo stems, with shared tempo and cue points.
 
 ![Windows 10 · 11](https://img.shields.io/badge/Windows-10%20%C2%B7%2011-293331)
 ![.NET 10 · WPF](https://img.shields.io/badge/.NET%2010-WPF-293331)
@@ -11,6 +11,7 @@ Open a WAV, set its BPM, place your cues, and export with the original audio int
 
 **[Getting started](#getting-started)** ·
 **[The workflow](#from-recording-to-export)** ·
+**[Multitrack export](#multitrack-export)** ·
 **[Build from source](#build-and-test)** ·
 **[Documentation](#documentation)**
 
@@ -101,7 +102,39 @@ matching the reference application's default; set it to 0 to export without temp
 Normalization is optional and can be undone. Exporting over the source is supported: undo and
 subsequent exports continue to use the original audio rather than an earlier normalized export.
 
+## Multitrack export
+
+<div align="center">
+
+<a href="https://i.imgur.com/19a7Auf.png">
+<img src="https://i.imgur.com/19a7Auf.png" width="960" alt="TP-7 WAV Editor multitrack view with stereo stems, sample-rate modes, a waveform, and shared tempo and cue controls.">
+</a>
+<br>
+<sub><b>Multitrack view</b> — arrange stereo stems, audition each pair, and place cue points on one shared timeline.</sub>
+
+</div>
+
+Choose **Multitrack** (Ctrl+M) to combine stereo stems into one multichannel WAV with shared tempo and cue points.
+
+| Output mode | Stereo stems | Channels | Encoding |
+| --- | --- | --- | --- |
+| 48 kHz | 1–6 | 2–12 | 24-bit PCM |
+| 96 kHz | 1–3 | 2–6 | 24-bit PCM |
+
+1. **Add stereo WAVs.** Select several files or drop them into the panel. Other sample rates are converted automatically with a band-limited resampler.
+2. **Arrange the stems.** Use the arrows to set channel order. Stem 1 occupies channels 1–2, stem 2 channels 3–4, and so on. All stems start at zero; shorter files are padded with silence to the longest stem.
+3. **Make your cues.** Select a stem to view its waveform and audition its stereo pair. The tempo, grid, and cue points belong to the entire set. Tempo and cues from the first added stem initialize the timeline.
+4. **Export multitrack.** Save one 24-bit WAV with every stereo pair and the shared markers. Source recordings stay untouched.
+
+Switching sample rate converts from the original recordings and keeps cue times to the nearest output sample. Remove excess stems before switching to 96 kHz. Changing the stem list or output rate resets cue undo history; ordinary cue edits still support undo/redo. A stem cannot be removed while doing so would leave cues beyond the new end.
+
+Normalization applies **one gain to the whole set**, preserving the balance between stems. Resampled audio retains floating-point headroom until export. If the panel reports peaks over 0 dBFS, normalize before exporting to avoid clipping. Conversion may use temporary disk space; preparation and export are cancelable. The final file must fit the standard RIFF limit (approximately 4 GB).
+
+Multitrack export creates a new file: individual stems' cue labels and unrelated metadata are not merged. Hardware validation on a physical TP-7 is still required.
+
 ## Getting started
+
+[**Download the latest Windows ZIP**](https://github.com/PeterPorzuczek/tp7-wav-editor-win/releases/latest/download/TP7-Wav-Editor-Windows-x64.zip)
 
 **Windows 10/11, x64.** Extract `TP7-Wav-Editor-Windows-x64.zip` and open `TP7-Wav-Editor.exe`.
 Keep the license files with the executable when redistributing the package.
@@ -135,6 +168,7 @@ accept fewer formats than the editor.
 | Shortcut | Action |
 | --- | --- |
 | Ctrl+O / I | Open WAV |
+| Ctrl+M | New multitrack set |
 | Ctrl+S / E | Export WAV |
 | Hold Space | Preview from the selected cue, pointer, or start |
 | Click / drag / right-click | Add / move / delete a cue |

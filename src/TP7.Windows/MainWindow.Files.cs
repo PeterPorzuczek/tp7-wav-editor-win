@@ -10,7 +10,7 @@ namespace TP7.Windows;
 public partial class MainWindow
 {
     private bool ConfirmDiscard()
-        => session?.IsDirty != true || MessageBox.Show(this, "You have changes that have not been exported. Discard them?", "Unsaved changes", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes;
+        => (session?.IsDirty != true && !stemsDirty) || MessageBox.Show(this, "You have changes that have not been exported. Discard them?", "Unsaved changes", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes;
 
     private async Task OpenFile()
     {
@@ -40,20 +40,21 @@ public partial class MainWindow
         {
             var token = operation!.Token;
             loaded = await Task.Run(() => WaveDocument.Load(path, new Progress<double>(value => Dispatcher.BeginInvoke(() => Progress.Value = value)), token), token);
-            var old = session?.Document;
+            CloseDocument();
+            SetMultitrackMode(false);
+            recording = loaded;
             session = new EditorSession(loaded);
             loaded = null;
             Waveform.Session = Overview.Session = session;
-            old?.Dispose();
             taps.Clear();
             Transport.IsEnabled = EditorPanel.IsEnabled = ExportButton.IsEnabled = true;
-            FileNameText.Text = Path.GetFileName(session.Document.FilePath);
-            FileNameText.ToolTip = session.Document.FilePath;
+            FileNameText.Text = Path.GetFileName(recording.FilePath);
+            FileNameText.ToolTip = recording.FilePath;
             FileInfoText.Text = $"{session.Document.Format.Description} · {WaveformView.FormatTime(session.Document.Duration)}";
             SetView(0, session.Document.Duration);
             RefreshEditor();
             string extra = session.Document.Format.Channels > 2 ? " Preview shows channels 1–2; export retains every channel." : "";
-            SetStatus(session.Document.Warnings.Count > 0 ? string.Join(" ", session.Document.Warnings) : $"Recording loaded. Cue points: {session.Cues.Count}.{extra}");
+            SetStatus(recording.Warnings.Count > 0 ? string.Join(" ", recording.Warnings) : $"Recording loaded. Cue points: {session.Cues.Count}.{extra}");
         }
         catch (OperationCanceledException) { SetStatus("Loading canceled."); }
         catch (Exception ex) { ShowError("Unable to open WAV", ex); }
@@ -88,9 +89,16 @@ public partial class MainWindow
         }
 
         var edit = session.Snapshot();
-        var dialog = new SaveFileDialog { Filter = "WAV files (*.wav)|*.wav", Title = "Export WAV for TP-7", FileName = session.Document.SuggestedFileName(edit), InitialDirectory = Path.GetDirectoryName(session.Document.FilePath), DefaultExt = ".wav", AddExtension = true, OverwritePrompt = true };
+        string name = multitrackMode ? $"Multitrack_{outputRate / 1000}k_{stems.Count}stems_{(edit.Tempo > 0 ? $"tempo_{Math.Round(edit.Tempo)}" : "no_tempo")}_cues_{edit.Cues.Length}.wav" : recording!.SuggestedFileName(edit);
+        var dialog = new SaveFileDialog { Filter = "WAV files (*.wav)|*.wav", Title = multitrackMode ? "Export multitrack WAV for TP-7" : "Export WAV for TP-7", FileName = name, InitialDirectory = Path.GetDirectoryName(multitrackMode ? stems[0].Original.FilePath : recording!.FilePath), DefaultExt = ".wav", AddExtension = true, OverwritePrompt = true };
         if (dialog.ShowDialog(this) != true)
         {
+            return;
+        }
+
+        if (multitrackMode && stems.Any(s => string.Equals(s.Original.FilePath, Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase)))
+        {
+            ShowError("Choose a new filename", new IOException("A multitrack export cannot replace a source stem."));
             return;
         }
 
@@ -100,8 +108,20 @@ public partial class MainWindow
         {
             var doc = session.Document;
             var token = operation!.Token;
-            await Task.Run(() => doc.Export(dialog.FileName, edit, new Progress<double>(value => Dispatcher.BeginInvoke(() => Progress.Value = value)), token), token);
+            var progress = UiProgress();
+            await Task.Run(() =>
+            {
+                if (doc is MultitrackDocument multitrack)
+                {
+                    multitrack.Export(dialog.FileName, edit, progress, token);
+                }
+                else
+                {
+                    ((WaveDocument)doc).Export(dialog.FileName, edit, progress, token);
+                }
+            }, token);
             session.MarkSaved();
+            stemsDirty = false;
             RefreshEditor();
             SetStatus($"Saved: {dialog.FileName}");
         }
@@ -126,7 +146,14 @@ public partial class MainWindow
     {
         if (e.Data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } paths)
         {
-            await LoadFile(paths[0]);
+            if (multitrackMode)
+            {
+                await AddStems(paths);
+            }
+            else
+            {
+                await LoadFile(paths[0]);
+            }
         }
     }
 
@@ -146,6 +173,6 @@ public partial class MainWindow
         }
         timer.Stop();
         player.Dispose();
-        session?.Document.Dispose();
+        CloseDocument();
     }
 }

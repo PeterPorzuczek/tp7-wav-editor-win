@@ -3,9 +3,11 @@ using TP7.Core;
 
 namespace TP7.Audio;
 
-public sealed class PcmPreviewProvider(WaveDocument document, long startFrame, bool normalized) : IWaveProvider
+public sealed class PcmPreviewProvider(IWaveSource document, long startFrame, bool normalized, int firstChannel = 0) : IWaveProvider
 {
-    private readonly WaveDocument document = document;
+    private readonly IWaveSource document = document;
+    private readonly int channelOffset = firstChannel >= 0 && firstChannel + Math.Min(2, document.Format.Channels) <= document.Format.Channels
+        ? firstChannel : throw new ArgumentOutOfRangeException(nameof(firstChannel));
     private readonly byte[] input = new byte[8192 * document.Format.BlockAlign];
     private long position = startFrame;
     private readonly double gain = normalized ? document.NormalizationGain : 1;
@@ -32,8 +34,7 @@ public sealed class PcmPreviewProvider(WaveDocument document, long startFrame, b
             {
                 for (int channel = 0; channel < WaveFormat.Channels; channel++)
                 {
-                    // Preview uses channels 1/2; every original channel is retained on export.
-                    double value = format.Decode(input.AsSpan(i * format.BlockAlign + channel * format.BytesPerSample));
+                    double value = format.Decode(input.AsSpan(i * format.BlockAlign + (channelOffset + channel) * format.BytesPerSample));
                     short sample = (short)Math.Clamp(Math.Round(value * gain * Volume * 32768), short.MinValue, short.MaxValue);
                     System.Buffers.Binary.BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(offset + total + i * WaveFormat.BlockAlign + channel * 2), sample);
                 }

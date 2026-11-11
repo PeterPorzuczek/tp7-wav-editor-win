@@ -11,12 +11,13 @@ public sealed class WaveformView : FrameworkElement
     private static readonly Brush WaveBrush = Brush("#93C9AC"), Muted = Brush("#718F7E"), Orange = Brush("#FF895B");
     private static readonly Typeface Mono = new("Consolas");
     private DrawingGroup? waveformDrawing;
-    private (WaveDocument?, double, double, double, double, bool) drawingKey;
+    private (WaveDocument?, double, double, double, double, double) drawingKey;
     private bool draggingCue, dragCheckpoint, draggingOverview;
     private Point mouseDown;
     private uint? dragCueId;
     public bool IsOverview { get; set; }
     public EditorSession? Session { get; set; }
+    public WaveDocument? PreviewDocument { get; set; }
     public double ViewStart { get; set; }
     public double ViewDuration { get; set; } = 1;
     public double? HoverTime { get; private set; }
@@ -67,7 +68,7 @@ public sealed class WaveformView : FrameworkElement
             dc.Pop();
             return;
         }
-        var doc = session.Document;
+        var doc = PreviewDocument ?? (WaveDocument)session.Document;
         if (!IsOverview)
         {
             double secondsPerLabel = Duration / Math.Max(1, PlotWidth / 100);
@@ -92,13 +93,13 @@ public sealed class WaveformView : FrameworkElement
                 }
             }
         }
-        var key = (doc, Start, Duration, ActualWidth, ActualHeight, session.Normalized);
+        double gain = session.Normalized ? session.Document.NormalizationGain : 1;
+        var key = (doc, Start, Duration, ActualWidth, ActualHeight, gain);
         if (waveformDrawing == null || drawingKey != key)
         {
             drawingKey = key;
             waveformDrawing = new DrawingGroup();
             using var waveContext = waveformDrawing.Open();
-            double gain = session.Normalized ? doc.NormalizationGain : 1;
             int channels = IsOverview ? 1 : doc.Peaks.DisplayChannels;
             for (int c = 0; c < channels; c++)
             {

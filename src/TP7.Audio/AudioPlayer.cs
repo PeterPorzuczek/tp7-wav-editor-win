@@ -16,14 +16,14 @@ public sealed class AudioPlayer : IDisposable
         provider?.Volume = (float)volume;
     }
 
-    public void Play(WaveDocument document, double seconds, bool normalized, double volume)
+    public void Play(IWaveSource document, double seconds, bool normalized, double volume, int firstChannel = 0)
     {
         Stop();
         long frame = Math.Clamp((long)(seconds * document.Format.SampleRate), 0, document.FrameCount - 1);
         start = (double)frame / document.Format.SampleRate;
         try
         {
-            provider = new(document, frame, normalized)
+            provider = new(document, frame, normalized, firstChannel)
             {
                 Volume = (float)volume
             };

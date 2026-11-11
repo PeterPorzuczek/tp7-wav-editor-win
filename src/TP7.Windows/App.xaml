@@ -49,6 +49,45 @@
       <Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="Margin" Value="0,6,0,6"/>
     </Style>
+    <Style TargetType="RadioButton">
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Choice" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="4" Padding="5">
+              <DockPanel>
+                <Border Width="12" Height="12" CornerRadius="6" BorderBrush="#9AADA8" BorderThickness="1" Margin="0,0,8,0" VerticalAlignment="Center">
+                  <Ellipse x:Name="Dot" Fill="#FF895B" Margin="2" Visibility="Collapsed"/>
+                </Border>
+                <ContentPresenter VerticalAlignment="Center"/>
+              </DockPanel>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Dot" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="Choice" Property="Background" Value="#293831"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Choice" Property="BorderBrush" Value="#FF895B"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style TargetType="ListBox">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ListBox">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+              <ScrollViewer Padding="{TemplateBinding Padding}" Focusable="False">
+                <ItemsPresenter/>
+              </ScrollViewer>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
     <Style TargetType="ListBoxItem">
       <Setter Property="Foreground" Value="{StaticResource Ink}"/>
       <Setter Property="Padding" Value="8,8"/>

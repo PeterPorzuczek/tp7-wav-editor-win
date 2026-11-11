@@ -13,6 +13,7 @@ namespace TP7.Windows;
 public partial class MainWindow : Window
 {
     private EditorSession? session;
+    private WaveDocument? recording;
     private readonly AudioPlayer player = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(40) };
     private readonly List<double> taps = [];
@@ -101,7 +102,11 @@ public partial class MainWindow : Window
             RedoButton.IsEnabled = session.CanRedo;
             NormalizeButton.Content = session.Normalized ? "✓  Audio normalized" : "Normalize audio  ·  N";
             NormalizeButton.IsEnabled = !session.Normalized && session.Document.Peak > 0;
-            Title = $"{(session.IsDirty ? "● " : "")}{Path.GetFileName(session.Document.FilePath)} — TP-7 WAV Editor";
+            Title = $"{(session.IsDirty || stemsDirty ? "● " : "")}{(multitrackMode ? "Multitrack" : Path.GetFileName(recording?.FilePath))} — TP-7 WAV Editor";
+            if (multitrackMode)
+            {
+                UpdateMultitrackSummary();
+            }
             Waveform.InvalidateVisual();
             Overview.InvalidateVisual();
         }
@@ -117,7 +122,8 @@ public partial class MainWindow : Window
 
         try
         {
-            player.Play(session.Document, session.SelectedCue is { } cue ? session.Seconds(cue) : Waveform.HoverTime ?? 0, session.Normalized, VolumeSlider.Value);
+            player.Play(session.Document, session.SelectedCue is { } cue ? session.Seconds(cue) : Waveform.HoverTime ?? 0, session.Normalized, VolumeSlider.Value,
+                multitrackMode ? Math.Max(0, StemList.SelectedIndex) * 2 : 0);
         }
         catch (Exception ex) { ShowError("Unable to start playback", ex); }
     }

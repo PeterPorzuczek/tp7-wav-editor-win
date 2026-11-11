@@ -1,13 +1,15 @@
 namespace TP7.Core;
 
-public sealed class EditorSession(WaveDocument document)
+public sealed class EditorSession(IWaveSource document, EditSnapshot initial)
 {
+    public EditorSession(WaveDocument document) : this(document, new(document.InitialTempo, [.. document.InitialCues], false)) { }
+
     private readonly Stack<EditSnapshot> undo = new(), redo = new();
-    private EditSnapshot saved = new(document.InitialTempo, [.. document.InitialCues], false);
-    public WaveDocument Document { get; } = document;
-    public double Tempo { get; private set; } = document.InitialTempo;
-    public List<CuePoint> Cues { get; } = [.. document.InitialCues];
-    public bool Normalized { get; private set; }
+    private EditSnapshot saved = initial with { Cues = [.. initial.Cues] };
+    public IWaveSource Document { get; } = document;
+    public double Tempo { get; private set; } = initial.Tempo;
+    public List<CuePoint> Cues { get; } = [.. initial.Cues];
+    public bool Normalized { get; private set; } = initial.Normalized;
     public uint? SelectedId { get; set; }
     public CuePoint? SelectedCue => Cues.FirstOrDefault(c => c.Id == SelectedId);
     public double GridOffset { get; set; }

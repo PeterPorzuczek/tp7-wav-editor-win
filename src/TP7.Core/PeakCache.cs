@@ -60,6 +60,11 @@ public sealed class PeakCache
 
     public PeakPair Query(long startFrame, long endFrame, int channel)
     {
+        if (startFrame >= document.FrameCount)
+        {
+            return new(0, 0);
+        }
+        bool includesSilence = endFrame > document.FrameCount;
         startFrame = Math.Clamp(startFrame, 0, document.FrameCount - 1);
         endFrame = Math.Clamp(endFrame, startFrame + 1, document.FrameCount);
         if (endFrame - startFrame < BlockFrames)
@@ -73,7 +78,7 @@ public sealed class PeakCache
                 min = Math.Min(min, v);
                 max = Math.Max(max, v);
             }
-            return new(min, max);
+            return includesSilence ? new(Math.Min(0, min), Math.Max(0, max)) : new(min, max);
         }
         int level = 0;
         long block = BlockFrames;
@@ -89,6 +94,6 @@ public sealed class PeakCache
             low = Math.Min(low, peaks[i].Min);
             high = Math.Max(high, peaks[i].Max);
         }
-        return new(low, high);
+        return includesSilence ? new(Math.Min(0, low), Math.Max(0, high)) : new(low, high);
     }
 }

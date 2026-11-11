@@ -6,7 +6,7 @@ namespace TP7.Core;
 
 
 /// <summary>RIFF editor. Source audio is held open, streamed, and never re-encoded for metadata edits.</summary>
-public sealed partial class WaveDocument : IDisposable
+public sealed partial class WaveDocument : IWaveSource, IDisposable
 {
     private readonly FileStream source;
     private readonly List<WaveChunk> chunks = [];
@@ -247,15 +247,7 @@ public sealed partial class WaveDocument : IDisposable
 
     public void Export(string destination, EditSnapshot edit, IProgress<double>? progress = null, CancellationToken token = default)
     {
-        if (!double.IsFinite(edit.Tempo) || edit.Tempo is < 0 or > 999)
-        {
-            throw new ArgumentOutOfRangeException(nameof(edit), "Tempo must be between 0 and 999 BPM.");
-        }
-
-        if (edit.Cues.Length > 100000 || edit.Cues.Any(c => c.Frame < 0 || c.Frame > FrameCount) || edit.Cues.Select(c => c.Id).Distinct().Count() != edit.Cues.Length)
-        {
-            throw new InvalidDataException("Invalid cue points.");
-        }
+        WaveMetadata.Validate(edit, FrameCount);
 
         string target = Path.GetFullPath(destination);
         string temporary = Path.Combine(Path.GetDirectoryName(target)!, $".tp7-{Guid.NewGuid():N}.tmp");
@@ -270,7 +262,7 @@ public sealed partial class WaveDocument : IDisposable
                 CopyChunk(chunks.Single(c => c.Id == "fmt "), writer, token);
                 if (edit.Tempo > 0)
                 {
-                    WriteChunk(writer, "acid", CreateAcid((float)edit.Tempo));
+                    WriteChunk(writer, "acid", WaveMetadata.Acid((float)edit.Tempo));
                 }
 
                 writer.Write("data"u8);
@@ -318,21 +310,7 @@ public sealed partial class WaveDocument : IDisposable
                     CopyChunk(chunk, writer, token);
                 }
                 // An empty cue chunk is required by the original 2.2 export to clear TP-7 cues.
-                using var cueBytes = new MemoryStream();
-                using (var cueWriter = new BinaryWriter(cueBytes, Encoding.ASCII, true))
-                {
-                    cueWriter.Write(sortedCues.Length);
-                    for (int i = 0; i < sortedCues.Length; i++)
-                    {
-                        cueWriter.Write((uint)i + 1);
-                        cueWriter.Write(0u);
-                        cueWriter.Write("data"u8);
-                        cueWriter.Write(0u);
-                        cueWriter.Write(0u);
-                        cueWriter.Write(checked((uint)sortedCues[i].Frame));
-                    }
-                }
-                WriteChunk(writer, "cue ", cueBytes.ToArray());
+                WriteChunk(writer, "cue ", WaveMetadata.Cues(sortedCues));
                 long riffLength = output.Position;
                 if (riffLength - 8 > uint.MaxValue)
                 {
@@ -362,14 +340,6 @@ public sealed partial class WaveDocument : IDisposable
                 File.Delete(temporary);
             }
         }
-    }
-
-    private static byte[] CreateAcid(float tempo)
-    {
-        // Byte layout verified against WavLoader.CreateAcidChunk in the supplied 2.2 app.
-        byte[] data = [1, 0, 0, 0, 48, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 4, 0, 0, 0, 0, 0];
-        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(20), tempo);
-        return data;
     }
 
     private static byte[] RewriteCueLabels(byte[] data, Dictionary<uint, uint> ids)

@@ -24,6 +24,14 @@ The `cue ` payload contains a 32-bit count followed by 24-byte records referenci
 
 Known cue-label subchunks in `LIST/adtl` are remapped to the new IDs. Labels for removed cues are dropped. Unknown top-level chunks, their original padding bytes, and bytes after the declared RIFF end are retained.
 
+## Multitrack files
+
+The multitrack panel accepts stereo WAV sources in the reader's supported sample formats. It prepares them at 48 kHz (up to six stems) or 96 kHz (up to three stems), using NAudio's [WDL sinc resampler](https://github.com/naudio/NAudio/blob/v2.2.1/NAudio.Core/Dsp/WdlResampler.cs) when rates differ. Output duration is rounded to the nearest sample, with at least one frame for very short sources. Resampled intermediate files use float32 to retain filter overshoot and input headroom.
+
+Export writes an interleaved 24-bit PCM `fmt ` chunk (format tag 1), a `data` chunk with two channels per stem, optional `acid`, and one shared `cue ` chunk. Channel order is stem 1 L/R, stem 2 L/R, etc. Every source starts at frame zero; missing tail frames are digital silence. Cue offsets use output sample frames. The first added source supplies initial tempo and cues, with cue times rescaled when needed. Other source metadata and cue labels are not merged into the new recording.
+
+A common optional normalization gain preserves relative stem levels. Without normalization, samples outside the 24-bit range are clipped at final encoding; the panel warns when normalization is needed. Sources at the chosen rate are read directly. Export size includes metadata and is checked against RIFF limits before a temporary file is created. Multitrack export cannot replace a source stem.
+
 ## Safe export
 
 Export writes a temporary file in the destination directory. The completed file replaces an existing destination with `File.Replace`, or is moved into place for a new destination. Cancellation is checked before final replacement. A failure removes the temporary file and propagates an error to the UI.

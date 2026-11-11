@@ -9,6 +9,7 @@
     <DockPanel Grid.Row="0">
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
         <Button Content="Shortcuts  ?" Tag="help" Click="OnAction" Margin="0,0,10,0"/>
+        <Button x:Name="MultitrackButton" Content="Multitrack" Tag="multitrack" Click="OnAction" Margin="0,0,10,0" ToolTip="Create a multitrack WAV from stereo stems · Ctrl+M"/>
         <Button x:Name="OpenButton" Content="Open WAV" Tag="open" Click="OnAction" ToolTip="Ctrl+O or I · you can also drop a file here" Margin="0,0,10,0"/>
         <Button x:Name="ExportButton" Content="Export WAV  ↗" Tag="export" Click="OnAction" Background="#FF895B" Foreground="#17211C" BorderBrush="#FF895B" FontWeight="SemiBold" IsEnabled="False" ToolTip="Ctrl+S or E"/>
       </StackPanel>
@@ -24,11 +25,69 @@
     </DockPanel>
     <Grid Grid.Row="2">
       <Grid.ColumnDefinitions>
+        <ColumnDefinition x:Name="StemColumn" Width="0"/>
+        <ColumnDefinition x:Name="StemGap" Width="0"/>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="18"/>
         <ColumnDefinition Width="280"/>
       </Grid.ColumnDefinitions>
-      <Border Grid.Column="0" Background="#1C2723" BorderBrush="#34423C" BorderThickness="1" CornerRadius="8" Padding="18">
+      <Border x:Name="MultitrackPanel" Grid.Column="0" Visibility="Collapsed" Background="#1C2723" BorderBrush="#34423C" BorderThickness="1" CornerRadius="8" Padding="14">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <StackPanel>
+            <TextBlock Text="MULTITRACK EXPORT" Style="{StaticResource Caption}" Foreground="#FF895B"/>
+            <TextBlock Text="Build your set" FontSize="19" FontWeight="SemiBold" Margin="0,0,0,14"/>
+            <RadioButton x:Name="Mode48" Content="48 kHz  ·  up to 6 stereo stems" GroupName="OutputRate" Foreground="#EBEEE9" IsChecked="True" Checked="OnOutputRateChanged" Margin="0,0,0,9"/>
+            <RadioButton x:Name="Mode96" Content="96 kHz  ·  up to 3 stereo stems" GroupName="OutputRate" Foreground="#EBEEE9" Checked="OnOutputRateChanged" Margin="0,0,0,12"/>
+            <TextBlock Text="Automatic resampling · 24-bit WAV" Foreground="#9AADA8" FontSize="11"/>
+            <Button x:Name="AddStemsButton" Content="+ Add stereo WAVs" Click="OnAddStems" Margin="0,16,0,10"/>
+            <DockPanel Margin="0,0,0,5">
+              <TextBlock x:Name="StemCountText" Text="0 / 6" DockPanel.Dock="Right" Foreground="#FF895B" FontFamily="Consolas"/>
+              <TextBlock Text="STEMS / CHANNEL ORDER" FontSize="9" Foreground="#9AADA8"/>
+            </DockPanel>
+          </StackPanel>
+          <Grid Grid.Row="1">
+            <TextBlock x:Name="StemEmptyText" Text="Drop stereo WAVs here.&#10;&#10;All stems start at 00:00.&#10;Shorter stems end in silence." TextWrapping="Wrap" Foreground="#9AADA8" Margin="5,18"/>
+            <ListBox x:Name="StemList" Background="Transparent" BorderThickness="0" SelectionChanged="OnStemSelected" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="-5,0">
+              <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                  <Setter Property="Padding" Value="8,4"/>
+                </Style>
+              </ListBox.ItemContainerStyle>
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel ToolTip="{Binding Path}">
+                    <DockPanel>
+                      <TextBlock Text="{Binding Number}" Foreground="#FF895B" FontFamily="Consolas" Margin="0,0,8,0"/>
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    </DockPanel>
+                    <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="#9AADA8" Margin="0,5,0,0"/>
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Grid>
+          <StackPanel Grid.Row="2">
+            <Grid Margin="0,10,0,14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+              </Grid.ColumnDefinitions>
+              <Button x:Name="StemUpButton" Content="↑" Click="OnStemUp" Padding="8" ToolTip="Move stem up" AutomationProperties.Name="Move stem up" IsEnabled="False"/>
+              <Button x:Name="StemDownButton" Grid.Column="1" Content="↓" Click="OnStemDown" Padding="8" Margin="5,0" ToolTip="Move stem down" AutomationProperties.Name="Move stem down" IsEnabled="False"/>
+              <Button x:Name="RemoveStemButton" Grid.Column="2" Content="Remove" Click="OnRemoveStem" Padding="8" IsEnabled="False"/>
+            </Grid>
+            <TextBlock x:Name="MultitrackSummary" Text="Add stems to begin." TextWrapping="Wrap" FontSize="11" Margin="0,0,0,10"/>
+            <TextBlock Text="Select a stem to view and listen.&#10;Cue points apply to every stem." TextWrapping="Wrap" Foreground="#9AADA8" FontSize="11"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+      <Border Grid.Column="2" Background="#1C2723" BorderBrush="#34423C" BorderThickness="1" CornerRadius="8" Padding="18">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -80,7 +139,7 @@
           </Grid>
         </Grid>
       </Border>
-      <Grid Grid.Column="2" x:Name="EditorPanel" IsEnabled="False">
+      <Grid Grid.Column="4" x:Name="EditorPanel" IsEnabled="False">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="14"/>
@@ -178,7 +237,7 @@
         <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
       <TextBlock x:Name="StatusText" Text="Ready. Metadata edits preserve the original audio samples." Foreground="#9AADA8" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Column="1" Text="WINDOWS EDITION  /  1.0" Foreground="#6D8578" FontFamily="Consolas" FontSize="10" Margin="16,0,0,0"/>
+      <TextBlock Grid.Column="1" Text="WINDOWS EDITION  /  1.1" Foreground="#6D8578" FontFamily="Consolas" FontSize="10" Margin="16,0,0,0"/>
     </Grid>
     <Border x:Name="BusyOverlay" Grid.RowSpan="4" Background="#ED151D1B" CornerRadius="8" Visibility="Collapsed">
       <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">

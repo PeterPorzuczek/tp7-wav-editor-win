@@ -31,6 +31,11 @@ public partial class MainWindow
             ShowHelp();
             return;
         }
+        if (command == "multitrack")
+        {
+            NewMultitrack();
+            return;
+        }
         if (session == null)
         {
             return;
@@ -127,6 +132,10 @@ public partial class MainWindow
         {
             command = "export";
         }
+        else if (ctrl && e.Key == Key.M)
+        {
+            command = "multitrack";
+        }
         else if (editing)
         {
             return;
@@ -141,6 +150,11 @@ public partial class MainWindow
         }
         else if (ctrl || Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))
         {
+            return;
+        }
+        else if (multitrackMode && (StemList.IsKeyboardFocusWithin || Keyboard.FocusedElement is RadioButton))
+        {
+            // Leave list navigation and radio-button selection to WPF.
             return;
         }
         else if (e.Key == Key.Space)

@@ -1,6 +1,7 @@
 EDIT WAV METADATA FOR TP-7
 
 Ctrl+O / I     Open a WAV file (or drag and drop)
+Ctrl+M         Start a new multitrack set
 Ctrl+S / E     Export the edited WAV
 Space         Hold to audition from cue / cursor
 Play button   Toggle continuous playback
@@ -32,6 +33,16 @@ cues writes an empty cue chunk for TP-7 compatibility.
 Metadata-only edits preserve the original audio bytes.
 Normalization changes the exported samples; playback
 volume does not. Undo can revert normalization.
+
+MULTITRACK EXPORT
+
+48 kHz: up to 6 stereo stems (12 channels).
+96 kHz: up to 3 stereo stems (6 channels).
+Add stereo WAVs; resampling is automatic. Select a
+stem to preview it and use the arrows to reorder.
+All stems share the same tempo and cue timeline.
+Shorter stems end in silence. Export is 24-bit PCM.
+Changing stems/rate resets cue undo history.
 
 Independent Windows implementation, inspired by
 TP-7 WAV Editor 2.2 by EcstasyJones / Max Solomon.

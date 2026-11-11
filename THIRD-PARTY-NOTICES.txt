@@ -18,6 +18,12 @@ Copyright 2020 Mark Heath
 https://github.com/naudio/NAudio
 Full license: licenses/NAudio-LICENSE.txt
 
+WDL resampler, included in NAudio.Core — zlib-style license
+Copyright (C) 2005 and later Cockos Incorporated
+C# port by Mark Heath, used with permission from Justin Frankel
+https://github.com/naudio/NAudio/blob/v2.2.1/NAudio.Core/Dsp/WdlResampler.cs
+Full license: licenses/WDL-LICENSE.txt
+
 Microsoft .NET and Windows Desktop runtime — MIT and third-party notices
 Copyright (c) .NET Foundation and Contributors
 https://github.com/dotnet/runtime
