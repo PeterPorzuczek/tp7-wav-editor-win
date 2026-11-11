@@ -43,6 +43,16 @@ It works with local WAV files. It does not upload recordings or connect directly
 
 </div>
 
+<div align="center">
+
+<a href="https://www.youtube.com/shorts/p9uwnBtGGeg">
+<img src="https://i.ytimg.com/vi/p9uwnBtGGeg/hqdefault.jpg" width="460" alt="Watch the TP-7 YouTube Short.">
+</a>
+<br>
+<b><a href="https://www.youtube.com/shorts/p9uwnBtGGeg">▶ Watch the Short on YouTube</a></b>
+
+</div>
+
 ## What it does
 
 <table>
