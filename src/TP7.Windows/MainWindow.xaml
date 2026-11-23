@@ -219,6 +219,7 @@
           </Grid>
         </Border>
         <StackPanel Grid.Row="3" Margin="0,14,0,0">
+          <CheckBox x:Name="CompanionToggle" Content="Export matching .cue companion" IsChecked="True" Margin="0,0,0,10" ToolTip="Save the same markers for the Bluetooth cue app. Copy both files to TP-7. The .cue extension still needs a device test; disable for WAV-only export."/>
           <Button x:Name="NormalizeButton" Content="Normalize audio  ·  N" Tag="normalize" Click="OnAction"/>
           <Grid Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
@@ -237,7 +238,7 @@
         <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
       <TextBlock x:Name="StatusText" Text="Ready. Metadata edits preserve the original audio samples." Foreground="#9AADA8" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Column="1" Text="WINDOWS EDITION  /  1.1" Foreground="#6D8578" FontFamily="Consolas" FontSize="10" Margin="16,0,0,0"/>
+      <TextBlock Grid.Column="1" Text="WINDOWS EDITION  /  1.2" Foreground="#6D8578" FontFamily="Consolas" FontSize="10" Margin="16,0,0,0"/>
     </Grid>
     <Border x:Name="BusyOverlay" Grid.RowSpan="4" Background="#ED151D1B" CornerRadius="8" Visibility="Collapsed">
       <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">

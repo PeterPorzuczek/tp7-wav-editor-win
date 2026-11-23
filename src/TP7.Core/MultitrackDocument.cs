@@ -84,14 +84,19 @@ public sealed class MultitrackDocument : IWaveSource
         return size;
     }
 
+    internal void ValidateDestination(string destination)
+    {
+        if (stems.OfType<WaveDocument>().Any(s => string.Equals(s.FilePath, Path.GetFullPath(destination), StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new IOException("Choose a new filename; a multitrack export cannot replace a source stem.");
+        }
+    }
+
     public void Export(string destination, EditSnapshot edit, IProgress<double>? progress = null, CancellationToken token = default)
     {
         long size = ExportSize(edit);
         string target = Path.GetFullPath(destination);
-        if (stems.OfType<WaveDocument>().Any(s => string.Equals(s.FilePath, target, StringComparison.OrdinalIgnoreCase)))
-        {
-            throw new IOException("Choose a new filename; a multitrack export cannot replace a source stem.");
-        }
+        ValidateDestination(target);
         string temporary = Path.Combine(Path.GetDirectoryName(target)!, $".tp7-{Guid.NewGuid():N}.tmp");
         try
         {

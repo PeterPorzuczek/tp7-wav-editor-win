@@ -38,6 +38,29 @@ Export writes a temporary file in the destination directory. The completed file 
 
 The source remains open with delete sharing, allowing replacement on Windows without invalidating reads from the original handle. This is covered by a regression test that normalizes in place and then exports the original unnormalized audio again.
 
-## Compatibility status
+## Paired cue companion export
+
+`CueCompanionExport` clones one `EditSnapshot`, builds a bounded carrier, and stages
+both files in the destination folder. The final WAV filename (not the staging or
+stem filename) is embedded in the companion. Native `cue ` records and companion
+offsets use the same sorted sample-frame positions; duplicates and EOF are retained.
+The companion BPM is converted through float32 to match the exported ACID value.
+Zero BPM encodes absent tempo, and an empty list overwrites any previous companion.
+
+After a final cancellation check, the companion is committed with a backup and the
+WAV is replaced. A WAV commit failure restores the previous companion (or removes
+the newly created one). If rollback itself fails, the error names the retained
+backup and warns not to use the pair. No cancellation occurs between commits.
+Two files cannot be atomically replaced together: power loss/process termination
+between the renames can leave an unmatched pair; re-export both before use.
+
+The `.cue` contains mono 48 kHz PCM16 FSK data, not text. Version 1's framing,
+payload, CRC and transport are specified in the MIDI application's
+[protocol notes](https://github.com/PeterPorzuczek/tp7-midi/blob/main/docs/REMOTE_PROTOCOL.md#on-disk-audio-and-payload).
+The helper's audio is data and must not be normalized or edited. Source identity
+checks compare filename, frame count and rate; they do not fingerprint audio or
+detect changed native markers. Export/copy both files after every marker edit.
+
+## Hardware status
 
 Automated tests verify the file structures and the editing semantics. The implementation has not been exercised on a physical TP-7. Recorder firmware may accept a narrower set of formats than the editor. The project does not implement USB transfer, recorder control, or MIDI clock.

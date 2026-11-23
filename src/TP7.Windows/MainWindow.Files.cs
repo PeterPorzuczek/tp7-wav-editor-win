@@ -89,6 +89,7 @@ public partial class MainWindow
         }
 
         var edit = session.Snapshot();
+        bool companion = CompanionToggle.IsChecked == true;
         string name = multitrackMode ? $"Multitrack_{outputRate / 1000}k_{stems.Count}stems_{(edit.Tempo > 0 ? $"tempo_{Math.Round(edit.Tempo)}" : "no_tempo")}_cues_{edit.Cues.Length}.wav" : recording!.SuggestedFileName(edit);
         var dialog = new SaveFileDialog { Filter = "WAV files (*.wav)|*.wav", Title = multitrackMode ? "Export multitrack WAV for TP-7" : "Export WAV for TP-7", FileName = name, InitialDirectory = Path.GetDirectoryName(multitrackMode ? stems[0].Original.FilePath : recording!.FilePath), DefaultExt = ".wav", AddExtension = true, OverwritePrompt = true };
         if (dialog.ShowDialog(this) != true)
@@ -102,8 +103,15 @@ public partial class MainWindow
             return;
         }
 
+        string companionPath = CueCompanionExport.CompanionPath(dialog.FileName);
+        if (companion && File.Exists(companionPath) && MessageBox.Show(this,
+            $"Replace the matching companion too?\n\n{companionPath}", "Export WAV + companion", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
         player.Stop();
-        BeginOperation("Exporting WAV…");
+        BeginOperation(companion ? "Exporting WAV + cue companion…" : "Exporting WAV…");
         try
         {
             var doc = session.Document;
@@ -111,7 +119,11 @@ public partial class MainWindow
             var progress = UiProgress();
             await Task.Run(() =>
             {
-                if (doc is MultitrackDocument multitrack)
+                if (companion)
+                {
+                    CueCompanionExport.Export(doc, dialog.FileName, edit, progress, token);
+                }
+                else if (doc is MultitrackDocument multitrack)
                 {
                     multitrack.Export(dialog.FileName, edit, progress, token);
                 }
@@ -123,9 +135,9 @@ public partial class MainWindow
             session.MarkSaved();
             stemsDirty = false;
             RefreshEditor();
-            SetStatus($"Saved: {dialog.FileName}");
+            SetStatus(companion ? $"Saved WAV + {Path.GetFileName(companionPath)} · copy both files to the same TP-7 folder." : $"Saved: {dialog.FileName}");
         }
-        catch (OperationCanceledException) { SetStatus("Export canceled. The destination file was not changed."); }
+        catch (OperationCanceledException) { SetStatus("Export canceled. Destination files were not changed."); }
         catch (Exception ex) { ShowError("Unable to save WAV", ex); }
         finally { EndOperation(); }
     }

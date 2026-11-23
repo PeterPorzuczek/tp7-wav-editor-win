@@ -22,6 +22,11 @@ The Windows edition is a native C#/.NET 10 application with a WPF interface. It 
 
 ## Validation
 
+`CueCarrier` encodes bounded v1 FSK companions compatible with the web MIDI app.
+`CueCompanionExport` stages WAV and companion from one snapshot, then commits with
+companion rollback if WAV replacement fails. Core source-stem protection remains
+in place before staging; the UI additionally protects original resampled stems.
+
 xUnit tests build synthetic RIFF fixtures independently of the production writer. They check preserved audio and metadata, normalization across supported formats, cue labels, malformed input, cancellation, source replacement, editing history, and waveform transients. Multitrack checks cover both mode limits, channel-pair ordering, silence padding, shared markers, float headroom, selected-pair playback, resampling duration/impulse timing, and rejection of ultrasonic energy during downsampling.
 
 The GitHub workflow checks formatting, builds with warnings as errors, runs tests, and packages the app. It does not establish hardware compatibility, perceptual playback quality, or code-signing trust. Release binaries are currently unsigned.

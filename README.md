@@ -106,6 +106,29 @@ canceling before replacement leaves an existing file unchanged.
 4. **Check the timing.** Enable **Grid** and **Snap**, align to a cue, and audition the result.
 5. **Export.** Choose **Export WAV**. The suggested filename includes the tempo and cue count.
 
+### Matching companion for Bluetooth cues
+
+**Export matching .cue companion** is enabled by default for single-file and multitrack
+exports. One export creates `track.wav` with native TP-7 markers and `track.cue` with
+the same sample offsets, output sample rate, duration, filename and stored BPM. Copy
+**both files into the same TP-7 folder**, select the music WAV on the recorder, then
+use **Read TP-7 → Start remote session → Read cue carrier** in
+[the Bluetooth MIDI app](https://peterporzuczek.github.io/tp7-midi/), with **track.cue** selected.
+
+The `.cue` is this project's binary audio carrier, **not a text CUE sheet**. Reading
+the carrier as `.tp7-cues.wav` has been confirmed on hardware. Opening it as `.cue`
+and keeping it out of the recorder's track list still need a TP-7 test. If rejected,
+rename only `track.cue` to `track.tp7-cues.wav` and choose **older exports** in the
+web app; this fallback will appear as an extra track on TP-7.
+
+The companion supports 0–256 markers, 8–192 kHz and up to 4,294,967,295 frames.
+No markers are silently dropped. End markers are retained but disabled for web jumps.
+Disable the checkbox for WAV-only export if a file exceeds these limits. Re-export
+and copy both files after changes; editing cues on TP-7 is not synchronized back.
+The web app jumps to positions without switching the recorder's native CUE selection.
+Export preserves exact sample offsets; Bluetooth seeks round once to milliseconds
+and still have device/connection latency.
+
 Tempo **0** removes tempo metadata on export. A file without tempo metadata opens at **120 BPM**,
 matching the reference application's default; set it to 0 to export without tempo.
 

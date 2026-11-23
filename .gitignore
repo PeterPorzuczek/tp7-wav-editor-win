@@ -16,6 +16,7 @@
 *.app/
 *.wav
 *.wave
+*.cue
 *.tmp
 *.log
 
