@@ -28,14 +28,20 @@ public sealed class CueCompanionTests : IDisposable
         Assert.Equal(48000, BinaryPrimitives.ReadInt32LittleEndian(chunks["fmt "].AsSpan(4)));
         byte[] data = chunks["data"];
         Assert.All(data.Take(14400), b => Assert.Equal(0, b));
-        Assert.All(data.TakeLast(14400), b => Assert.Equal(0, b));
-        int bytes = (data.Length / 2 - 14400) / (120 * 8);
-        byte[] frame = new byte[bytes];
-        for (int i = 0; i < bytes * 8; i++)
+        byte ReadByte(int index)
         {
-            short sample = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan((7200 + i * 120 + 10) * 2));
-            frame[i / 8] |= (byte)((sample < 9000 ? 1 : 0) << (7 - i % 8));
+            byte value = 0;
+            for (int bit = 0; bit < 8; bit++)
+            {
+                short sample = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan((7200 + (index * 8 + bit) * 120 + 10) * 2));
+                value |= (byte)((sample < 9000 ? 1 : 0) << (7 - bit));
+            }
+            return value;
         }
+        int bytes = 22 + ReadByte(16) + ReadByte(17) * 256;
+        Assert.True(7200 + bytes * 960 <= data.Length / 2);
+        byte[] frame = Enumerable.Range(0, bytes).Select(ReadByte).ToArray();
+        Assert.All(data.Skip((7200 + bytes * 960) * 2), b => Assert.Equal(0, b));
         Assert.Equal(Convert.FromHexString("5555555555555555D3916BC5A72E84F0"), frame[..16]);
         return frame;
     }
@@ -100,6 +106,25 @@ public sealed class CueCompanionTests : IDisposable
             Assert.Equal(before["JUNK"], after["JUNK"]);
         }
         Assert.Empty(Directory.GetFiles(root, ".tp7-*"));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(17)]
+    [InlineData(256)]
+    public void CarrierCrcPrecedesTheTailEvenWhenBluetoothOmitsFinalBlocks(int count)
+    {
+        var edit = new EditSnapshot(95, Enumerable.Range(0, count).Select(i => new CuePoint((uint)i, i * 62001L)).ToArray(), false);
+        byte[] wave = CueCarrier.CreateWave("fixture-000001.wav", 48000, 16000000, edit);
+        byte[] frame = ReadFrame(wave);
+        int samples = (wave.Length - 44) / 2;
+        Assert.Equal(0, samples % 12000);
+        Assert.InRange(samples - (7200 + frame.Length * 960), 48000, 59999);
+        // Omit two 250 ms blocks: every payload/CRC bit must still be present.
+        byte[] shortened = wave[..^48000];
+        BinaryPrimitives.WriteInt32LittleEndian(shortened.AsSpan(4), shortened.Length - 8);
+        BinaryPrimitives.WriteInt32LittleEndian(shortened.AsSpan(40), shortened.Length - 44);
+        Assert.Equal(frame, ReadFrame(shortened));
     }
 
     [Fact]

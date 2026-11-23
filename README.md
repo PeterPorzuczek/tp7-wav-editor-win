@@ -120,9 +120,17 @@ the same sample offsets, output sample rate, duration, filename and stored BPM. 
 use **Read TP-7 → Start remote session → Read cue carrier** in
 [the Bluetooth MIDI app](https://peterporzuczek.github.io/tp7-midi/), with **track.cue** selected.
 
+Version **1.3.1** adds at least one second of trailing silence and aligns the companion
+to 250 ms blocks. This addresses a reproduced truncation when TP-7 ends Bluetooth
+transfer without the final partial audio block. Regenerate and copy older companions;
+updating only the web app cannot restore missing data. The padded version still needs
+device validation. Choose the final WAV filename before export: renaming both files
+does not update the filename embedded inside `.cue`.
+
 The `.cue` is this project's binary audio carrier, **not a text CUE sheet**. Reading
-the carrier as `.tp7-cues.wav` has been confirmed on hardware. Opening it as `.cue`
-and keeping it out of the recorder's track list still need a TP-7 test. If rejected,
+the carrier as `.tp7-cues.wav` has been confirmed on hardware. A later report accepted
+`.cue` audio but exposed the truncation above. Keeping it out of the recorder's track
+list still needs a TP-7 test. If rejected,
 rename only `track.cue` to `track.tp7-cues.wav` and choose **older exports** in the
 web app; this fallback will appear as an extra track on TP-7.
 

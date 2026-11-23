@@ -63,8 +63,11 @@ public static class CueCarrier
         }
         BinaryPrimitives.WriteUInt32LittleEndian(frame.AsSpan(18 + payload.Length), crc ^ uint.MaxValue);
 
-        const int rate = 48000, samplesPerBit = 120, silence = 7200;
-        int samples = 2 * silence + frame.Length * 8 * samplesPerBit;
+        // TP-7 can end a BLE transfer after full 250 ms ADPCM blocks, omitting
+        // a partial tail. Keep one second after the CRC and align the whole file.
+        const int rate = 48000, samplesPerBit = 120, leading = 7200, blockFrames = 12000;
+        int signalEnd = leading + frame.Length * 8 * samplesPerBit;
+        int samples = (signalEnd + rate + blockFrames - 1) / blockFrames * blockFrames;
         using var output = new MemoryStream(44 + samples * 2);
         using var writer = new BinaryWriter(output);
         writer.Write("RIFF"u8);
@@ -79,7 +82,7 @@ public static class CueCarrier
         writer.Write((ushort)16);
         writer.Write("data"u8);
         writer.Write(samples * 2);
-        writer.Write(new byte[silence * 2]);
+        writer.Write(new byte[leading * 2]);
         foreach (byte value in frame)
         {
             for (int bit = 7; bit >= 0; bit--)
@@ -92,7 +95,7 @@ public static class CueCarrier
                 }
             }
         }
-        writer.Write(new byte[silence * 2]);
+        writer.Write(new byte[(samples - signalEnd) * 2]);
         return output.ToArray();
     }
 }
