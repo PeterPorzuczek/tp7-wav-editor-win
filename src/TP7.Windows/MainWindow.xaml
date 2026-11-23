@@ -238,7 +238,7 @@
         <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
       <TextBlock x:Name="StatusText" Text="Ready. Metadata edits preserve the original audio samples." Foreground="#9AADA8" TextTrimming="CharacterEllipsis"/>
-      <TextBlock Grid.Column="1" Text="WINDOWS EDITION  /  1.2" Foreground="#6D8578" FontFamily="Consolas" FontSize="10" Margin="16,0,0,0"/>
+      <TextBlock Grid.Column="1" Text="WINDOWS EDITION  /  1.2.1" Foreground="#6D8578" FontFamily="Consolas" FontSize="10" Margin="16,0,0,0"/>
     </Grid>
     <Border x:Name="BusyOverlay" Grid.RowSpan="4" Background="#ED151D1B" CornerRadius="8" Visibility="Collapsed">
       <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">

@@ -106,6 +106,11 @@ canceling before replacement leaves an existing file unchanged.
 4. **Check the timing.** Enable **Grid** and **Snap**, align to a cue, and audition the result.
 5. **Export.** Choose **Export WAV**. The suggested filename includes the tempo and cue count.
 
+Version 1.2.1 also opens existing exports whose RIFF header incorrectly includes
+the first eight bytes in its length. The app validates the audio and metadata and
+shows a compatibility notice. Re-export to save the corrected header; opening a
+file never changes the original. This includes multichannel WAVs with native cues.
+
 ### Matching companion for Bluetooth cues
 
 **Export matching .cue companion** is enabled by default for single-file and multitrack

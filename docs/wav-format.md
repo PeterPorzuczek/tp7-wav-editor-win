@@ -4,6 +4,14 @@
 
 The reader accepts little-endian RIFF/WAVE with one contiguous `data` chunk. Supported samples are PCM8/16/24/32 and IEEE float32, including their WAVE_FORMAT_EXTENSIBLE subtypes. Extensible valid bits must be zero or match the container bit depth. The reader validates chunk bounds, frame alignment, byte rate, sample rate, and channel count. Non-finite floating-point samples are rejected.
 
+Existing exports that put the **whole file length** in RIFF's size field are accepted
+with a visible warning. That field normally excludes the first eight bytes. This
+compatibility rule applies only to an exact eight-byte discrepancy, and every chunk
+must still fit within the real file; audio-frame and cue validation remain required.
+Opening does not modify the source. Export writes a standard RIFF size while
+preserving audio samples and marker positions. Other oversized headers, incomplete
+audio and truncated chunks are rejected instead of being guessed or padded.
+
 Metadata-only export copies the original sample bytes. Peak normalization applies one gain across all channels and encodes samples in the original format. Integer encoding clamps to the representable range; unsigned PCM8 uses 128 as digital silence.
 
 RF64, big-endian RIFX, compressed WAV, and segmented audio are unsupported. The RIFF 32-bit length field limits file size. Preview and waveform rendering use the first two channels; exports retain all channels.

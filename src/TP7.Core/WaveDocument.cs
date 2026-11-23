@@ -66,6 +66,14 @@ public sealed partial class WaveDocument : IWaveSource, IDisposable
         }
 
         riffEnd = 8L + BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(4));
+        // Some existing TP-7 exports store the whole file length here instead of length - 8.
+        // Accept only that exact mismatch; the chunk walk and audio/metadata checks below
+        // must still validate the entire body against the actual file boundary.
+        bool wholeFileSize = riffEnd == source.Length + 8;
+        if (wholeFileSize)
+        {
+            riffEnd = source.Length;
+        }
         if (riffEnd < 12 || riffEnd > source.Length)
         {
             throw new InvalidDataException("The WAV file is truncated or declares an invalid RIFF size.");
@@ -175,6 +183,10 @@ public sealed partial class WaveDocument : IWaveSource, IDisposable
             }
         }
         InitialCues.Sort((a, b) => a.Frame.CompareTo(b.Frame));
+        if (wholeFileSize)
+        {
+            Warnings.Add("Opened a WAV with a legacy RIFF size (+8 bytes). Audio and cue chunks were validated. Export saves a corrected header; the source is unchanged.");
+        }
     }
 
     public void ReadAt(long offset, Span<byte> buffer)
