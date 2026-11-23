@@ -40,7 +40,7 @@ public partial class MainWindow
         StemColumn.Width = new GridLength(enabled ? 250 : 0);
         StemGap.Width = new GridLength(enabled ? 18 : 0);
         MinWidth = enabled ? 1280 : 1040;
-        MinHeight = enabled ? 760 : 670;
+        MinHeight = enabled ? 760 : 740;
         MultitrackButton.Content = enabled ? "New multitrack" : "Multitrack";
         ExportButton.Content = enabled ? "Export multitrack  ↗" : "Export WAV  ↗";
     }
