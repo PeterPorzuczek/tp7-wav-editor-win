@@ -7,13 +7,20 @@ public sealed class StereoStem : IDisposable
 {
     public WaveDocument Original { get; }
     public WaveDocument Audio { get; private set; }
-    public string Name => Path.GetFileName(Original.FilePath);
+    public string SourcePath { get; }
+    public string Name { get; }
 
-    private StereoStem(WaveDocument original, WaveDocument audio)
+    private StereoStem(WaveDocument original, WaveDocument audio, string? sourcePath = null, string? name = null)
     {
         Original = original;
         Audio = audio;
+        SourcePath = sourcePath ?? original.FilePath;
+        Name = name ?? Path.GetFileName(SourcePath);
     }
+
+    public static StereoStem[] ImportMultitrack(WaveDocument source, IProgress<double>? progress = null, CancellationToken token = default)
+        => StereoPairImport.Split(source, progress, token).Select((pair, i) =>
+            new StereoStem(pair, pair, source.FilePath, $"{Path.GetFileNameWithoutExtension(source.FilePath)} · CH {i * 2 + 1}–{i * 2 + 2}")).ToArray();
 
     public static StereoStem Load(string path, int sampleRate, IProgress<double>? progress = null, CancellationToken token = default)
     {

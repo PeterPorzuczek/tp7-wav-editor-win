@@ -290,6 +290,136 @@ public sealed class MultitrackTests : IDisposable
         Assert.Equal(.25, Sample(source, 0, 0));
     }
 
+    [Theory]
+    [InlineData(48000, 4, 8, false)]
+    [InlineData(48000, 8, 16, false)]
+    [InlineData(48000, 8, 24, false)]
+    [InlineData(48000, 12, 24, false)]
+    [InlineData(96000, 4, 32, false)]
+    [InlineData(96000, 6, 24, false)]
+    [InlineData(48000, 4, 32, true)]
+    public void ReopeningMultitrackExtractsEveryStereoPairByteForByte(int rate, int channels, int bits, bool floating)
+    {
+        using var source = WaveDocument.Load(WriteWave("exported", rate, 16403,
+            (frame, channel) => .45 * Math.Sin(frame * .013 + channel) + channel * .01, channels, bits, floating));
+        byte[] original = File.ReadAllBytes(source.FilePath);
+        var stems = StereoStem.ImportMultitrack(source);
+        try
+        {
+            Assert.Equal(channels / 2, stems.Length);
+            byte[] input = new byte[(int)source.FrameCount * source.Format.BlockAlign];
+            Assert.Equal(source.FrameCount, source.ReadFrames(0, input));
+            var project = new MultitrackDocument(rate, stems.Select(s => s.Audio));
+            for (int i = 0; i < stems.Length; i++)
+            {
+                var stem = stems[i];
+                Assert.Equal(source.FilePath, stem.SourcePath);
+                Assert.Contains($"CH {i * 2 + 1}–{i * 2 + 2}", stem.Name);
+                Assert.False(File.Exists(stem.Original.FilePath));
+                Assert.Equal(source.FrameCount, stem.Audio.FrameCount);
+                Assert.Equal(rate, stem.Audio.Format.SampleRate);
+                Assert.Equal(bits, stem.Audio.Format.BitsPerSample);
+                Assert.Equal(floating, stem.Audio.Format.IsFloat);
+                byte[] pair = new byte[(int)source.FrameCount * stem.Audio.Format.BlockAlign];
+                Assert.Equal(source.FrameCount, stem.Audio.ReadFrames(0, pair));
+                for (int frame = 0; frame < source.FrameCount; frame++)
+                {
+                    int size = stem.Audio.Format.BlockAlign;
+                    Assert.True(input.AsSpan(frame * source.Format.BlockAlign + i * size, size).SequenceEqual(pair.AsSpan(frame * size, size)));
+                }
+                Assert.Equal((float)Sample(source, 8193, i * 2), stem.Audio.Peaks.Query(8193, 8194, 0).Max);
+                byte[] direct = new byte[400], preview = new byte[400];
+                new PcmPreviewProvider(source, 8190, false, i * 2).Read(direct, 0, direct.Length);
+                new PcmPreviewProvider(project, 8190, false, i * 2).Read(preview, 0, preview.Length);
+                Assert.Equal(direct, preview);
+            }
+            Assert.Equal(original, File.ReadAllBytes(source.FilePath));
+        }
+        finally
+        {
+            foreach (var stem in stems)
+            { stem.Dispose(); }
+        }
+    }
+
+    [Fact]
+    public void ReopenedMultitrackKeepsSharedMetadataAndCanReorderExportAndResample()
+    {
+        using var source = WaveDocument.Load(WriteWave("source", 48000, 20000, (_, c) => (c + 1) / 16d, 8));
+        var edit = new EditSnapshot(95, Enumerable.Range(0, 17).Select(i => new CuePoint((uint)i, i * 1250)).ToArray(), false);
+        string input = Path.Combine(root, "exported.wav");
+        source.Export(input, edit);
+        using var exported = WaveDocument.Load(input);
+        var stems = StereoStem.ImportMultitrack(exported);
+        try
+        {
+            var project = new MultitrackDocument(48000, stems.Select(s => s.Audio));
+            var session = new EditorSession(project, new(exported.InitialTempo, exported.InitialCues.ToArray(), false));
+            Assert.False(session.IsDirty);
+            Assert.Equal(95, session.Tempo);
+            Assert.Equal(edit.Cues.Select(c => c.Frame), session.Cues.Select(c => c.Frame));
+            string output = Path.Combine(root, "roundtrip.wav");
+            CueCompanionExport.Export(project, output, session.Snapshot());
+            Assert.True(File.Exists(Path.ChangeExtension(output, ".cue")));
+            using var roundtrip = WaveDocument.Load(output);
+            Assert.Equal(8, roundtrip.Format.Channels);
+            Assert.Equal(95, roundtrip.InitialTempo);
+            Assert.Equal(edit.Cues.Select(c => c.Frame), roundtrip.InitialCues.Select(c => c.Frame));
+            Assert.Equal(WaveFixture.Inspect(File.ReadAllBytes(input))["data"], WaveFixture.Inspect(File.ReadAllBytes(output))["data"]);
+            var reordered = new MultitrackDocument(48000, stems.Reverse().Select(s => s.Audio));
+            string reorderedPath = Path.Combine(root, "reordered.wav");
+            reordered.Export(reorderedPath, session.Snapshot());
+            using var actual = WaveDocument.Load(reorderedPath);
+            Assert.Equal(Sample(exported, 15000, 6), Sample(actual, 15000, 0));
+            Assert.Equal(Sample(exported, 15000, 1), Sample(actual, 15000, 7));
+            using var converted = StemResampler.Prepare(stems[3].Original, 96000);
+            Assert.Equal(40000, converted.FrameCount);
+            Assert.InRange(Sample(converted, 20000, 0), .43749, .43751);
+        }
+        finally
+        {
+            foreach (var stem in stems)
+            { stem.Dispose(); }
+        }
+    }
+
+    [Theory]
+    [InlineData(48000, 1)]
+    [InlineData(48000, 2)]
+    [InlineData(48000, 3)]
+    [InlineData(48000, 14)]
+    [InlineData(96000, 8)]
+    [InlineData(44100, 4)]
+    public void OrdinaryOrUnsupportedLayoutsAreNotOpenedAsTP7Multitracks(int rate, int channels)
+    {
+        using var source = WaveDocument.Load(WriteWave("ordinary", rate, 10, (_, _) => 0, channels));
+        Assert.False(StereoPairImport.CanImport(source));
+        Assert.Throws<InvalidDataException>(() => StereoPairImport.Split(source));
+    }
+
+    [Theory]
+    [InlineData(.1)]
+    [InlineData(.8)]
+    [InlineData(1)]
+    public void CanceledImportCleansTemporaryPairsAndLeavesSourceUntouched(double cancelAt)
+    {
+        using var source = WaveDocument.Load(WriteWave("source", 48000, 20000, (_, c) => c / 16d, 8));
+        byte[] original = File.ReadAllBytes(source.FilePath);
+        using var canceled = new CancellationTokenSource();
+        string[] before = Directory.GetFiles(Path.GetTempPath(), "tp7-pairs-*.wav");
+        var created = new HashSet<string>();
+        Assert.Throws<OperationCanceledException>(() => StereoPairImport.Split(source, new CallbackProgress(value =>
+        {
+            created.UnionWith(Directory.GetFiles(Path.GetTempPath(), "tp7-pairs-*.wav").Except(before));
+            if (value >= cancelAt)
+            { canceled.Cancel(); }
+        }), canceled.Token));
+        Assert.NotEmpty(created);
+        Assert.All(created, path => Assert.False(File.Exists(path)));
+        Assert.Equal(original, File.ReadAllBytes(source.FilePath));
+        Assert.Equal(.4375, Sample(source, 19000, 7));
+    }
+
     private sealed class CallbackProgress(Action<double> callback) : IProgress<double>
     {
         public void Report(double value) => callback(value);

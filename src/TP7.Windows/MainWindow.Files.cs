@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
-using System.Windows.Threading;
 using Microsoft.Win32;
+using TP7.Audio;
 using TP7.Core;
 
 namespace TP7.Windows;
@@ -36,15 +36,38 @@ public partial class MainWindow
         player.Stop();
         BeginOperation("Loading recording…");
         WaveDocument? loaded = null;
+        StereoStem[] imported = [];
         try
         {
             var token = operation!.Token;
-            loaded = await Task.Run(() => WaveDocument.Load(path, new Progress<double>(value => Dispatcher.BeginInvoke(() => Progress.Value = value)), token), token);
+            var progress = UiProgress();
+            loaded = await Task.Run(() => WaveDocument.Load(path, new MappedProgress(progress, 0, .4), token), token);
+            if (StereoPairImport.CanImport(loaded))
+            {
+                BusyText.Text = "Opening multitrack channel pairs…";
+                imported = await Task.Run(() => StereoStem.ImportMultitrack(loaded, new MappedProgress(progress, .4, .6), token), token);
+            }
+            token.ThrowIfCancellationRequested();
             CloseDocument();
-            SetMultitrackMode(false);
             recording = loaded;
-            session = new EditorSession(loaded);
             loaded = null;
+            if (imported.Length > 0)
+            {
+                outputRate = recording.Format.SampleRate;
+                stems.AddRange(imported);
+                imported = [];
+                // Keep the container as the synchronized source until the channel layout changes.
+                // This preserves its encoding, metadata, and normalization gain on ordinary edits.
+                session = new EditorSession(recording);
+                SetMultitrackMode(true);
+                Waveform.Session = Overview.Session = session;
+                taps.Clear();
+                RefreshStems();
+                SetStatus($"Opened multitrack: {stems.Count} stereo stems · {session.Cues.Count} shared cues. Select a stem to preview. {string.Join(" ", recording.Warnings)}");
+                return;
+            }
+            SetMultitrackMode(false);
+            session = new EditorSession(recording);
             Waveform.Session = Overview.Session = session;
             taps.Clear();
             Transport.IsEnabled = EditorPanel.IsEnabled = ExportButton.IsEnabled = true;
@@ -53,7 +76,7 @@ public partial class MainWindow
             FileInfoText.Text = $"{session.Document.Format.Description} · {WaveformView.FormatTime(session.Document.Duration)}";
             SetView(0, session.Document.Duration);
             RefreshEditor();
-            string extra = session.Document.Format.Channels > 2 ? " Preview shows channels 1–2; export retains every channel." : "";
+            string extra = session.Document.Format.Channels > 2 ? " This layout is outside TP-7 multitrack limits. Preview shows channels 1–2; export retains every channel." : "";
             SetStatus(recording.Warnings.Count > 0 ? string.Join(" ", recording.Warnings) : $"Recording loaded. Cue points: {session.Cues.Count}.{extra}");
         }
         catch (OperationCanceledException) { SetStatus("Loading canceled."); }
@@ -61,6 +84,10 @@ public partial class MainWindow
         finally
         {
             loaded?.Dispose();
+            foreach (var stem in imported)
+            {
+                stem.Dispose();
+            }
             EndOperation();
         }
     }
@@ -90,14 +117,15 @@ public partial class MainWindow
 
         var edit = session.Snapshot();
         bool companion = CompanionToggle.IsChecked == true;
-        string name = multitrackMode ? $"Multitrack_{outputRate / 1000}k_{stems.Count}stems_{(edit.Tempo > 0 ? $"tempo_{Math.Round(edit.Tempo)}" : "no_tempo")}_cues_{edit.Cues.Length}.wav" : recording!.SuggestedFileName(edit);
-        var dialog = new SaveFileDialog { Filter = "WAV files (*.wav)|*.wav", Title = multitrackMode ? "Export multitrack WAV for TP-7" : "Export WAV for TP-7", FileName = name, InitialDirectory = Path.GetDirectoryName(multitrackMode ? stems[0].Original.FilePath : recording!.FilePath), DefaultExt = ".wav", AddExtension = true, OverwritePrompt = true };
+        string name = recording != null ? recording.SuggestedFileName(edit) : $"Multitrack_{outputRate / 1000}k_{stems.Count}stems_{(edit.Tempo > 0 ? $"tempo_{Math.Round(edit.Tempo)}" : "no_tempo")}_cues_{edit.Cues.Length}.wav";
+        var dialog = new SaveFileDialog { Filter = "WAV files (*.wav)|*.wav", Title = multitrackMode ? "Export multitrack WAV for TP-7" : "Export WAV for TP-7", FileName = name, InitialDirectory = Path.GetDirectoryName(multitrackMode ? stems[0].SourcePath : recording!.FilePath), DefaultExt = ".wav", AddExtension = true, OverwritePrompt = true };
         if (dialog.ShowDialog(this) != true)
         {
             return;
         }
 
-        if (multitrackMode && stems.Any(s => string.Equals(s.Original.FilePath, Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase)))
+        if (multitrackMode && (stems.Any(s => string.Equals(s.SourcePath, Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase))
+            || string.Equals(recording?.FilePath, Path.GetFullPath(dialog.FileName), StringComparison.OrdinalIgnoreCase)))
         {
             ShowError("Choose a new filename", new IOException("A multitrack export cannot replace a source stem."));
             return;

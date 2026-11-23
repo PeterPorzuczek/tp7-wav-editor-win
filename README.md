@@ -154,6 +154,21 @@ subsequent exports continue to use the original audio rather than an earlier nor
 
 Choose **Multitrack** (Ctrl+M) to combine stereo stems into one multichannel WAV with shared tempo and cue points.
 
+**Reopen an exported multitrack with Open WAV (Ctrl+O).** Version 1.3.0 automatically
+opens 4–12 channels at 48 kHz, or 4–6 channels at 96 kHz, as separate stereo stems:
+channels 1–2, 3–4, and so on. Select a stem to see its waveform and audition that pair.
+The recording's BPM and sample-accurate cue positions are shared across every stem.
+You can reorder, add, or remove stems and export the edited multitrack with its matching
+`.cue` companion. A WAV does not retain the original separate stem filenames or
+unpadded lengths, so imported pairs use channel labels and the recording's full duration.
+
+Opening creates temporary stereo copies (approximately the source audio size); the
+original remains untouched. If the channel layout and rate stay unchanged, metadata
+edits preserve original audio bytes, encoding, and unknown WAV chunks. Changing the
+stem arrangement or rate builds a new 24-bit multitrack. Normalization changes samples
+only when enabled. Exports must use a different path from their source recording.
+Mono/stereo WAVs and layouts outside the TP-7 limits keep the ordinary WAV view.
+
 | Output mode | Stereo stems | Channels | Encoding |
 | --- | --- | --- | --- |
 | 48 kHz | 1–6 | 2–12 | 24-bit PCM |
@@ -188,7 +203,7 @@ The interface and documentation are in English.
 | RIFF/WAVE PCM | 8, 16, 24, and 32-bit |
 | IEEE floating point | 32-bit |
 | WAVE_FORMAT_EXTENSIBLE | PCM and float formats above, with matching valid and container bit depths |
-| Multiple channels | Up to 32; waveform and preview use channels 1–2, export retains all channels |
+| Multiple channels | Up to 32; supported TP-7 layouts reopen as stereo stems, other layouts preview channels 1–2 and retain all channels on export |
 
 Standard RIFF size limits apply, approximately **4 GB**. RF64, RIFX, compressed audio, and
 segmented WAV data are unsupported. See [WAV compatibility](docs/wav-format.md) for the metadata

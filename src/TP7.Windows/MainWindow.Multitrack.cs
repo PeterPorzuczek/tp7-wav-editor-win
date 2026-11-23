@@ -159,7 +159,7 @@ public partial class MainWindow
             Mode48.IsChecked = outputRate == 48000;
             Mode96.IsChecked = outputRate == 96000;
             StemList.ItemsSource = stems.Select((s, i) => new StemRow((i + 1).ToString("00"), s.Name,
-                $"CH {i * 2 + 1}–{i * 2 + 2} · {WaveformView.FormatTime(s.Audio.Duration, false)} · {s.Original.Format.SampleRate / 1000d:0.###}{(s.Original.Format.SampleRate != outputRate ? $" → {outputRate / 1000}" : "")} kHz", s.Original.FilePath)).ToArray();
+                $"CH {i * 2 + 1}–{i * 2 + 2} · {WaveformView.FormatTime(s.Audio.Duration, false)} · {s.Original.Format.SampleRate / 1000d:0.###}{(s.Original.Format.SampleRate != outputRate ? $" → {outputRate / 1000}" : "")} kHz", s.SourcePath)).ToArray();
             StemList.SelectedIndex = stems.Count > 0 ? Math.Clamp(selected, 0, stems.Count - 1) : -1;
             int maximum = MultitrackDocument.MaximumStems(outputRate);
             StemCountText.Text = $"{stems.Count} / {maximum}";
@@ -188,15 +188,17 @@ public partial class MainWindow
 
     private void UpdateMultitrackSummary()
     {
-        if (session?.Document is not MultitrackDocument document)
+        if (session?.Document is not { } document)
         {
             return;
         }
         try
         {
-            long size = document.ExportSize(session.Snapshot());
-            MultitrackSummary.Text = $"{document.StemCount * 2} channels · 24-bit PCM\n{WaveformView.FormatTime(document.Duration)} · {size / 1048576d:0.0} MB\n{session.Cues.Count} shared cue points";
-            if (document.Peak > 1 && !session.Normalized)
+            bool imported = document is WaveDocument;
+            long size = document is MultitrackDocument multitrack ? multitrack.ExportSize(session.Snapshot()) : ((WaveDocument)document).DataChunk.Size;
+            string format = imported ? $"{document.Format.BitsPerSample}-bit {(document.Format.IsFloat ? "float" : "PCM")}" : "24-bit PCM";
+            MultitrackSummary.Text = $"{stems.Count * 2} channels · {format}\n{WaveformView.FormatTime(document.Duration)} · {size / 1048576d:0.0} MB{(imported ? " audio" : "")}\n{session.Cues.Count} shared cue points";
+            if (document.Peak > 1 && !session.Normalized && (!imported || !document.Format.IsFloat))
             {
                 MultitrackSummary.Text += "\nOver 0 dBFS: normalize to avoid clipping.";
             }
@@ -226,7 +228,7 @@ public partial class MainWindow
         if (stem != null)
         {
             FileNameText.Text = $"Stem {index + 1:00} / {stem.Name}";
-            FileNameText.ToolTip = stem.Original.FilePath;
+            FileNameText.ToolTip = stem.SourcePath;
             FileInfoText.Text = $"Preview: channels {index * 2 + 1}–{index * 2 + 2} · {outputRate / 1000} kHz · shared cue timeline";
         }
         StemUpButton.IsEnabled = index > 0;

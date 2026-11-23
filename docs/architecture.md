@@ -18,6 +18,15 @@ The Windows edition is a native C#/.NET 10 application with a WPF interface. It 
 
 `TP7.Audio` adapts samples to a 16-bit PCM preview through NAudio WinMM. A multitrack preview selects a stereo pair, including its padded tail. Playback volume and conversion are separate from export. The provider can be tested without creating an audio device.
 
+`StereoPairImport` recognizes supported multichannel TP-7 layouts and splits each pair
+into a temporary WAV by copying sample bytes in one pass. `StereoStem` retains the
+container path and channel labels separately from those temporary paths. Opening
+constructs a clean multitrack editing session with the container's shared metadata;
+cancellation completes before replacing the current project. The original container
+stays open for byte-preserving metadata exports until a structural edit invalidates
+that route. Source-path protection covers imported containers even after removing
+their stems. Closing the project releases both the container and temporary pairs.
+
 `TP7.Windows` coordinates the editing session, controls, and waveform. The small presentation layer uses WPF event handlers split by responsibility: window state, file operations, and input commands. `WaveformView` handles drawing and pointer gestures. File loading and export run off the UI thread and expose cancellation and progress.
 
 ## Validation
